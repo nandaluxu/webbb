@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Placeholder camera icon (r28) — file ini sengaja dibikin sebagai
+     PLACEHOLDER: owner bakal replace aset ny sendiri. Bentuk ny kamera
+     sederhana, goresan stroke biar nyambung sama bahasa ikon situs. -->
+<svg width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M3 8.5C3 7.39543 3.89543 6.5 5 6.5H7.21922C7.71207 6.5 8.17563 6.26485 8.46614 5.87028L9.25 4.8H14.75L15.5339 5.87028C15.8244 6.26485 16.2879 6.5 16.7808 6.5H19C20.1046 6.5 21 7.39543 21 8.5V17C21 18.1046 20.1046 19 19 19H5C3.89543 19 3 18.1046 3 17V8.5Z" stroke="#000000" stroke-width="1.5" stroke-linejoin="round"/>
+<circle cx="12" cy="13" r="3.5" stroke="#000000" stroke-width="1.5"/>
+</svg>

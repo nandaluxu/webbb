@@ -1,0 +1,414 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Chat global: cuma isi obrolan ny yang kesimpen. Login cuma nama di browser, gak ada tabel user.
+model Pesan {
+  id        String   @id @default(cuid())
+  nama      String
+  teks      String
+  waktu     DateTime @default(now())
+  balasanId String?
+  balasan   Pesan?   @relation("Balasan", fields: [balasanId], references: [id])
+  dibalas   Pesan[]  @relation("Balasan")
+}
+
+// Akun + sesi login. Sandi null = akun anonim (tanpa sandi).
+// Token sesi disimpen di server, cookie httpOnly di browser.
+// verified/admin: status asli dari data (badge gak cuma tempelan UI).
+// sandiAsli: salinan terenkripsi (aes-256-gcm, kunci di data/kunci.txt)
+// buat ditampilin ke admin doang; cek sandi tetap pake hash scrypt.
+// bio: deskripsi diri yang bisa diedit user di profil ny.
+// username (r27): IDENTIFIER unik buat login + link profil + sapaan
+// @mention: huruf kecil, a-z 0-9 _ . (3-20). nama = display name
+// (bebas Unicode). Semua user lama udah ke-backfill username dari
+// nama ny (nama display gak tersentuh — gak ada yang kehilangan nama).
+model Pengguna {
+  id        String    @id @default(cuid())
+  nama      String    @unique
+  username  String?   @unique
+  sandi     String?
+  sandiAsli String?
+  jenis     String    @default("anonim")
+  verified  Boolean   @default(false)
+  admin     Boolean   @default(false)
+  bio       String?
+  pfp       String?
+  dibuat    DateTime  @default(now())
+  media     Media[]
+  suka      Suka[]
+  komentar  Komentar[]
+  sesi      Sesi[]
+  laporan   Laporan[]
+  mainAki   AkinatorMain[]
+  mainGame  Permainan[]
+  mengikuti Ikuti[]   @relation("Mengikuti")
+  pengikut  Ikuti[]   @relation("Diikuti")
+  /* r28: view unik per user + mention di post + notifikasi.
+     r29: + mention di komentar. */
+  lihat     LihatMedia[]
+  sebut     MediaSebut[]
+  sebutKom  KomentarSebut[]
+  notiKirim Notifikasi[] @relation("NotifikasiAktor")
+  notiTerima Notifikasi[] @relation("NotifikasiPenerima")
+  /* r30: akun AM V2 + job AI Image Editor. */
+  amAkun    AmAkunV2[]
+  editJob   EditGambarJob[]
+}
+
+// Relasi follow (r27): user A (pengikut) nge-follow user B (diikuti).
+// Unik per pasangan (anti dobel); follow diri sendiri diblok di
+// route (validasi server, bukan cuma UI). Kedua sisi cascade: akun
+// kehapus -> relasi ny ikut kebersihin.
+model Ikuti {
+  id         String   @id @default(cuid())
+  pengikutId String
+  pengikut   Pengguna @relation("Mengikuti", fields: [pengikutId], references: [id], onDelete: Cascade)
+  diikutiId  String
+  diikuti    Pengguna @relation("Diikuti", fields: [diikutiId], references: [id], onDelete: Cascade)
+  waktu      DateTime @default(now())
+
+  @@unique([pengikutId, diikutiId])
+  @@index([diikutiId])
+}
+
+model Sesi {
+  id         String    @id @default(cuid())
+  token      String    @unique
+  penggunaId String
+  pengguna   Pengguna  @relation(fields: [penggunaId], references: [id], onDelete: Cascade)
+  kadaluarsa DateTime
+  dibuat     DateTime  @default(now())
+}
+
+// Media galeri = SATU POST. dari: "unggah" (file di data/media) atau
+// "scan" (file statis di public/galeri, kedeteksi pas scan). pathAsli:
+// path relatif project buat unggah, path publik (/galeri/..) buat scan
+// (di post multi-foto ny = file item PERTAMA, buat kompatibilitas
+// data lama; file ny beneran diambil dari MediaItem sekarang).
+// Pratinjau low-res dibuat on-demand dan di-cache di data/pratinjau.
+model Media {
+  id       String     @id @default(cuid())
+  jenis    String
+  dari     String     @default("unggah")
+  pathAsli String
+  nama     String
+  judul    String?
+  ukuran   Int?
+  /* Dimensi asli (piksel) buat client: jatah tinggi kartu pas
+     rasio sebelum gambar muat (masonry HP gak loncat). Null = belum
+     kebaca (media lama sebelum kolom ny ada). */
+  lebar    Int?
+  tinggi   Int?
+  /* Siapa yang boleh lihat post (r24): "PUBLIC" = muncul di Gallery
+     + profil semua orang; "PROFILE" = cuma discovery Gallery yang
+     dibatasi (profil tetep keliatan orang lain, bukan private);
+     "PRIVATE" = cuma pemilik ny. Default post lama = PUBLIC. */
+  visibilitas String @default("PUBLIC")
+  /* r30: izin unduhan. Default TRUE biar selaras sama perilaku lama
+     (semula SEMUA post yang keliatan bisa diunduh siapa aja lewat
+     ?unduh=1) — post lama gak berubah perilaku. Uploader bisa matiin
+     lewat menu titik-tiga (route ny cek pemilik server-side);
+     pemilik sendiri SELALU boleh unduh post ny. */
+  bolehUnduh Boolean @default(true)
+  userId   String?
+  user     Pengguna?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  waktu    DateTime   @default(now())
+  suka     Suka[]
+  komentar Komentar[]
+  item     MediaItem[]
+  /* r28: penonton unik + mention. */
+  dilihat  LihatMedia[]
+  sebut    MediaSebut[]
+  notifikasi Notifikasi[]
+
+  @@unique([dari, pathAsli])
+  @@index([waktu])
+  @@index([visibilitas])
+}
+
+// Item media di dalem SATU post (r24, multi-foto per post): urutan
+// nentuin posisi slide di carousel. Post lama (sebelum tabel ny ada)
+// di-backfill otomatis jadi 1 item (lazy, pas pertama kebaca), jadi
+// gak ada data yang ilang dan semua post punya bentuk yang sama.
+model MediaItem {
+  id       String  @id @default(cuid())
+  mediaId  String
+  media    Media   @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  urutan   Int
+  jenis    String
+  pathAsli String
+  nama     String
+  ukuran   Int?
+  lebar    Int?
+  tinggi   Int?
+  waktu    DateTime @default(now())
+
+  @@unique([mediaId, urutan])
+  @@index([mediaId])
+}
+
+model Suka {
+  id     String   @id @default(cuid())
+  mediaId String
+  media  Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  userId String
+  user   Pengguna @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dibuat DateTime @default(now())
+
+  @@unique([mediaId, userId])
+}
+
+model Komentar {
+  id        String     @id @default(cuid())
+  mediaId   String
+  media     Media      @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  userId    String
+  user      Pengguna   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teks      String
+  waktu     DateTime   @default(now())
+  // Balasan komentar: nyambung ke komentar yang dibalas (1 level
+  // indentasi aja di tampilan, gak nested dalam-dalam). Komentar yang
+  // dibalas kehapus -> balasanny balik jadi komentar biasa.
+  balasanId String?
+  balasan   Komentar?  @relation("BalasanKomentar", fields: [balasanId], references: [id], onDelete: SetNull)
+  dibalas   Komentar[] @relation("BalasanKomentar")
+  /* r29: user-user yang di-@mention di teks komentar ini. */
+  sebut     KomentarSebut[]
+  /* r29: notifikasi mention yang nunjuk komentar ini (SetNull pas
+     komentar kehapus — item tetep kebaca, link ny ke post). */
+  notifikasi Notifikasi[]
+
+  @@index([mediaId, waktu])
+  @@index([balasanId])
+}
+
+// Laporan (report) konten: pesan chat, komentar, post, atau jawaban AI.
+// Isi ny snapshot saat laporan masuk (teks + pemilik + tempat ny), jadi
+// walau konten asli kehapus, admin tetep tau apa yang dilaporkan.
+// Pelapor diambil dari sesi login server-side (gak bisa dipalsuin).
+// Gak ada relasi FK ke konten: targetId cuma penanda ny, konten boleh
+// udah gak ada pas admin buka (keterangan ny ikut ke-snapshot).
+// User biasa cuma bisa kirim laporan; lihat/kelola cuma admin.
+model Laporan {
+  id          String   @id @default(cuid())
+  // jenis: "pesan" (chat global), "komentar", "media" (post), "ai" (jawaban Ney).
+  jenis       String
+  // Id konten yang dilaporkan. Buat jenis "ai" gak ada id di server
+  // (riwayat ny di browser user), jadi cukup penanda unik dari client.
+  targetId    String?
+  // Tempat konten ny (misal judul post / "chat global"), buat admin
+  // nyari konteks pas konten asli udah gak ada.
+  targetKet   String?
+  pelaporId   String
+  pelapor     Pengguna @relation(fields: [pelaporId], references: [id], onDelete: Cascade)
+  // Snapshot isi konten + nama pemilik ny pas dilaporkan.
+  konteks     String
+  pemilikNama String
+  waktu       DateTime @default(now())
+
+  @@index([waktu])
+}
+
+// Riwayat game Akinator yang SELESAI (r26) — bahan leaderboard di
+// /dashboard. Catat pas game kelar:
+//   hasil "kena"  = tebakan genie bener (aksi terima)
+//   hasil "pilih" = pemain milih karakter dari daftar soundlike
+//                    setelah genie nyerah — karakter ny "tersulit
+//                    ditebak". Nyerah tanpa milih gak direkam (nama
+//                    karakterny gak pernah ketahuan).
+// jumlahJawab = berapa pertanyaan yang dijawab pemain di game itu
+// ("siapa yang ngasih pertanyaan ke akinator" = jumlah jawab ny).
+// userId + pemainNama disnapshot saat game selesai: akun kehapus →
+// userId null (SetNull) tapi nama tetep kebaca di leaderboard.
+model AkinatorMain {
+  id          String    @id @default(cuid())
+  userId      String?
+  user        Pengguna? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  pemainNama  String    @default("Tamu")
+  charNama    String?
+  hasil       String
+  jumlahJawab Int       @default(0)
+  waktu       DateTime  @default(now())
+
+  @@index([waktu])
+  @@index([charNama])
+  @@index([pemainNama])
+}
+
+// fix26: catatan permainan GAME (Tic Tac Toe, 2048) — bahan papan
+// skor per kategori. Satu row = satu game yang TAMAT dari sudut pandang
+// pemain yang ngecatat:
+// - tictactoe : mode=cpu|lokal|online, hasil=menang|kalah|seri dari
+//   sisi pencatat (mode lokal = tanda pemenang "x"|"o" — dua pemain
+//   satu device, gak bisa diatribusin ke satu orang), catatan=level
+//   CPU (gampang|sedang|sempurna) pas mode cpu.
+// - 2048      : mode=ukuran papan ("4"|"5"|"6"), hasil=menang (momen
+//   nyampe target — kecatat SEKALI per game) | buntu (papan mati,
+//   skor final), skor + ubin = angka di momen itu, langkah=geseran.
+// Identitas ke-snapshot dari sesi (pattern sama kayak AkinatorMain):
+// gak login = "Tamu". User kehapus -> userId di-null (SetNull) tapi
+// row + nama snapshot ny tetep kejaga, jadi papan publik gak bolong.
+model Permainan {
+  id         String    @id @default(cuid())
+  userId     String?
+  user       Pengguna? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  pemainNama String    @default("Tamu")
+  game       String
+  mode       String    @default("")
+  hasil      String    @default("")
+  skor       Int       @default(0)
+  langkah    Int       @default(0)
+  ubin       Int       @default(0)
+  catatan    String    @default("")
+  waktu      DateTime  @default(now())
+
+  @@index([waktu])
+  @@index([game])
+  @@index([pemainNama])
+}
+
+// View post unik (r28): 1 user = 1 view per post, DIJAMIN di database
+// (unique constraint — dua tab / dua request barengan gak bisa nambah
+// angka dua kali; route ny juga nangkep bentrok P2002). Post kehapus
+// -> rows ny ikut kebersihin; user kehapus -> row kehapus tapi angka
+// TETEP kejaga? Gak: view = relasi ke user, kalo akun ilang row ny
+// ilang (angka nurun) — itu keputusan sadar: penonton yang beneran
+// ada. Anonymous yang gak pernah login (tanpa sesi) gak direkam
+// (kebijakan existing: gak ada identitas = gak dihitung).
+model LihatMedia {
+  id      String   @id @default(cuid())
+  mediaId String
+  media   Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  userId  String
+  user    Pengguna @relation(fields: [userId], references: [id], onDelete: Cascade)
+  waktu   DateTime @default(now())
+
+  @@unique([mediaId, userId])
+  @@index([userId])
+}
+
+// Mention @username di caption post (r28). Nyimpen USER ID (bukan
+// cuma teks), jadi walau username ganti, relasi + notifikasi ny tetep
+// valid. unique(mediaId,userId) = satu user cuma ke-sebut sekali per
+// post (notifikasi mention gak dobel).
+model MediaSebut {
+  id      String   @id @default(cuid())
+  mediaId String
+  media   Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  userId  String
+  user    Pengguna @relation(fields: [userId], references: [id], onDelete: Cascade)
+  waktu   DateTime @default(now())
+
+  @@unique([mediaId, userId])
+  @@index([userId])
+}
+
+// Mention @username di komentar (r29). Pola ny sama kayak MediaSebut
+// (caption post): nyimpen USER ID (bukan cuma teks) + unique
+// (komentarId,userId) = satu user cuma ke-sebut sekali per komentar
+// (relasi + notifikasi gak dobel). Komentar kehapus -> rows ikut
+// kebersihin (Cascade); akun kehapus -> rows ilang juga.
+model KomentarSebut {
+  id         String    @id @default(cuid())
+  komentarId String
+  komentar   Komentar  @relation(fields: [komentarId], references: [id], onDelete: Cascade)
+  userId     String
+  user       Pengguna  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  waktu      DateTime  @default(now())
+
+  @@unique([komentarId, userId])
+  @@index([userId])
+}
+
+// Notifikasi aktivitas (r28): LIKE / FOLLOW / MENTION. Penerima cuma
+// boleh baca punya ny sendiri (route ny yang mastiin). aktorId
+// SetNull + aktorNama snapshot: akun aktor kehapus -> notifikasi tetep
+// kebaca (nama ny masih ada), cuma gak nge-link ke profil ny.
+// mediaId SetNull: post kehapus -> notifikasi tetep ada, klik ny gak
+// nyasar (client dicek dulu). komentarId (r29) = konteks mention di
+// KOMENTAR: komentar kehapus -> SetNull, tapi mediaId ny masih nunjuk
+// post ny (klik tetep nyampe ke post yang bener).
+// Dedupe di route (bukan constraint — SQLite nyimpen NULL sebagai
+// beda-beda, unique index gak bisa nge-dedupe FOLLOW yang mediaId ny
+// null).
+model Notifikasi {
+  id         String    @id @default(cuid())
+  penerimaId String
+  penerima   Pengguna  @relation("NotifikasiPenerima", fields: [penerimaId], references: [id], onDelete: Cascade)
+  aktorId    String?
+  aktor      Pengguna? @relation("NotifikasiAktor", fields: [aktorId], references: [id], onDelete: SetNull)
+  aktorNama  String    @default("?")
+  jenis      String
+  mediaId    String?
+  media      Media?    @relation(fields: [mediaId], references: [id], onDelete: SetNull)
+  komentarId String?
+  komentar   Komentar? @relation(fields: [komentarId], references: [id], onDelete: SetNull)
+  waktu      DateTime  @default(now())
+  dibaca     DateTime?
+
+  @@index([penerimaId, waktu])
+  @@index([penerimaId, dibaca])
+}
+
+// r30: akun AM Premium V2 milik satu user (hasil generator).
+// Nyimpen kredensial temp mail (mail.tm: alamat + sandi) di sisi
+// SERVER, terpasang ke akun yang login (sesi httpOnly) — bukan
+// localStorage — biar kotak masuk ny bisa dibuka ulang kapan aja
+// (pindah halaman/refresh/tutup panel gak ilang). Sandi mail.tm ny
+// dipakai cuma buat login ulang ke penyedia temp mail; token JWT ny
+// gak disimpan (kebikin ulang tiap perlu, umur ny pendek).
+// status: "aktif" = premium ny udah aktif; "gagal" = proses gak
+// selesai (dipertahanin buat arsip email ny aja).
+model AmAkunV2 {
+  id        String    @id @default(cuid())
+  userId    String
+  user      Pengguna  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email     String
+  sandiMail String
+  provider  String    @default("mailtm")
+  uid       String?
+  kode      String?
+  status    String    @default("aktif")
+  dariBulk  Boolean   @default(false)
+  dibuat    DateTime  @default(now())
+
+  @@unique([userId, email])
+  @@index([userId])
+}
+
+// r30: job AI Image Editor (satu job = satu foto + satu filter).
+// status: QUEUED (nyebar di antrean) -> PROCESSING (mulai
+// dikerjain, mulai = patokan 30 menit) -> COMPLETED (hasil ny ada)
+// / FAILED (provider ny error, pesan ny manusiawi) / EXPIRED
+// (lewat 30 menit dari MULAI, gak dianggap gagal cuma karena user
+// ninggalin halaman — status diitung server-side, job ny jalan di
+// proses server). Hasil disimpen sebagai FILE di data/edit-gambar/
+// (hasil ny dikasih via route /hasil, bukan URL publik). Semua row
+// terisolasi per user (route ny yang mastiin — gak ada parameter
+// userId dari client).
+model EditGambarJob {
+  id         String    @id @default(cuid())
+  userId     String
+  user       Pengguna  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  filter     String
+  namaFilter String
+  artis      String?
+  status     String    @default("QUEUED")
+  sumberNama String
+  sumberUrl  String?
+  hasilJalur String?
+  hasilMime  String?
+  hasilNama  String?
+  pesan      String?
+  dibuat     DateTime  @default(now())
+  mulai      DateTime?
+  selesai    DateTime?
+
+  @@index([userId, dibuat])
+}
