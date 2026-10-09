@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
   /* Origin dev yang dikebolin: preview sandbox + quick tunnel cloudflared
      (HMR keblokir kalau host tunnel gak dikenal). Domain tunnel sendiri?
      Tambahin manual ke list ini. */
-  allowedDevOrigins: ["*.space-z.ai", "*.trycloudflare.com"],
+  allowedDevOrigins: ["*.space-z.ai", "*.trycloudflare.com", "nandaluxu.my.id", "wwww.nandaluxu.my.id"],
   /* Client socket.io selalu minta /socket.io/? (pakai slash). Normalisasi
      trailing-slash punya Next bakal nge-308 itu URL SEBELUM rewrite jalan,
      jadi dimatiin. Aman: app cuma punya route "/" (hash router). */
