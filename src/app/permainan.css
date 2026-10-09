@@ -1,0 +1,531 @@
+/* ============================================================
+   Permainan — Tic Tac Toe + 2048 + dropdown PilihOpsi,
+   ikut gaya UI yang dipilih di Pengaturan.
+
+   Kenapa file sendiri: game di globals.css ditulis dengan
+   bahasa klasik (kertas titik, tanda potong, bayangan keras,
+   stempel miring). Gaya lain butuh bahasa ny sendiri, dan
+   numpang rule globals ny bakal tabrakan (gak semua token
+   bisa nanggung beda filosofi: Swiss = datar hairline,
+   Japandi = tonal membulat lembut, Hanami = kelopak + sakura).
+   Jadi lapisan ini cuma NIMPA yang "klasik banget" ny.
+
+   Dimuat PALING AKHIR (setelah globals, swiss-zen, japandi,
+   hanami, ruang-obrol — lihat layout.tsx). Semua rule
+   di-scope html[data-ui="..."] jadi Klasik gak tersentuh.
+
+   Warna tanda X/O dan tangga ubin dihitung buat kontras:
+   tanda = grafik permainan (WCAG 1.4.11, butuh >= 3:1),
+   angka ubin besar tebal = teks besar (>= 3:1), angka mini
+   di tangga = teks kecil (>= 4.5:1).
+   ============================================================ */
+
+
+/* ============================================================
+   1. SWISS ZEN — hairline, datar, presisi
+   Hierarki lewat garis 1px + bobot huruf; gak ada bayangan,
+   gak ada tekstur. Papan jadi kisi garis tipis; goresan
+   tangan dibikin lebih tipis biar kesannya "digambar arsitek".
+   ============================================================ */
+html[data-ui="swiss"] .ttt-kertas,
+html[data-ui="swiss"] .g48-kertas{background-image:none;padding:14px}
+html[data-ui="swiss"] .ttt-kertas::before,
+html[data-ui="swiss"] .g48-kertas::before{content:none}
+
+/* Papan: garis kisi tipis, tanpa bayangan. */
+html[data-ui="swiss"] .ttt-papan{
+  border:1px solid var(--ink);background:var(--hair);gap:1px;box-shadow:none;
+}
+html[data-ui="swiss"] .ttt-sel{background:var(--bg)}
+html[data-ui="swiss"] .ttt-sel.terakhir::after{background:var(--ink)}
+/* Kotak menang: blok tint datar (bukan arsir), kisi tetap bersih. */
+html[data-ui="swiss"] .ttt-sel.menang::before{background:color-mix(in srgb,var(--ink) 9%,transparent)}
+
+/* Goresan: lebih tipis, ujung persegi (presisi), tetap tinta. */
+html[data-ui="swiss"] .ttt-mark path{stroke-width:5.5;stroke-linecap:square}
+html[data-ui="swiss"] .ttt-garis line{stroke-width:3.5;stroke-linecap:butt}
+html[data-ui="swiss"] .ttt-coret path,
+html[data-ui="swiss"] .ttt-coret circle{stroke-width:7;stroke-linecap:square}
+
+/* Plat pemain aktif: blok tinta Datar, gak melompat. */
+html[data-ui="swiss"] .ttt-plat.aktif{transform:none;box-shadow:none}
+html[data-ui="swiss"] .ttt-plat.menang{box-shadow:inset 0 -2px 0 var(--ink)}
+
+/* Skor: angka pakai bobot, bukan kembang. */
+html[data-ui="swiss"] .ttt-sel-skor b{font-weight:600;letter-spacing:-.01em}
+
+/* Stempel hasil: kotak rata, tanpa bingkai ganda / miring. */
+html[data-ui="swiss"] .ttt-stempel{border-width:1px;outline:0;transform:translate(-50%,50%)}
+html[data-ui="swiss"] .ttt-stempel.seri{transform:translate(-50%,50%)}
+
+/* Kode room: ubin datar, tegak, angka tabular. */
+html[data-ui="swiss"] .ttt-kode span{
+  box-shadow:none;transform:none;font-weight:600;letter-spacing:.02em;
+}
+
+/* Panel online: hairline, tanpa kertas titik. */
+html[data-ui="swiss"] .ttt-lobi,
+html[data-ui="swiss"] .ttt-nunggu{background-image:none;border-color:var(--hair)}
+html[data-ui="swiss"] .ttt-galat,
+html[data-ui="swiss"] .ttt-putus{border-left-width:2px}
+
+/* Jejak langkah: garis bawah tipis, gak ada blok. */
+html[data-ui="swiss"] .ttt-jejak i.kini{box-shadow:inset 0 -1px 0 var(--ink)}
+
+/* 2048: papan datar; tangga monokrom globals ny udah pas
+   (tinta dipekatkan bertahap = bahasa Swiss ny sendiri),
+   tinggal bersihin kertas ny. */
+html[data-ui="swiss"] .g48-papan{border:1px solid var(--ink);box-shadow:none}
+html[data-ui="swiss"] .g48-ubin,
+html[data-ui="swiss"] .g48-mini{border-radius:0}
+html[data-ui="swiss"] .g48-stempel{outline:0;box-shadow:none;transform:rotate(0deg)}
+html[data-ui="swiss"] .g48-stempel.buntu{transform:rotate(0deg)}
+html[data-ui="swiss"] .g48-skor-sel b,
+html[data-ui="swiss"] .g48-stat b{font-weight:600;letter-spacing:-.01em}
+
+
+/* ============================================================
+   2. JAPANDI — permukaan tonal, sudut lembut, gerak sabar
+   Papan = baki kayu (kilau) dengan sel linen; X warna kayu
+   tua, O hijau lumut: dua bahan alam, dibedain warna bukan
+   garis. Semua bayangan ny lembut dan nempel ke bawah.
+   ============================================================ */
+html[data-ui="japandi"] .ttt-kertas,
+html[data-ui="japandi"] .g48-kertas{
+  background-image:none;background:var(--permukaan);
+  border-radius:var(--r-besar);box-shadow:var(--bayang);padding:26px;
+}
+html[data-ui="japandi"] .ttt-kertas::before,
+html[data-ui="japandi"] .g48-kertas::before{content:none}
+
+/* Papan TTT: baki membulat, sel linen, jarak lega. */
+html[data-ui="japandi"] .ttt-papan{
+  border:0;background:var(--kilau);gap:6px;border-radius:var(--r);
+  box-shadow:var(--bayang);overflow:hidden;
+}
+html[data-ui="japandi"] .ttt-sel{background:var(--permukaan)}
+html[data-ui="japandi"] .ttt-papan[data-aktif="1"] .ttt-sel:not(.isi):hover{
+  background:color-mix(in srgb,var(--lumut) 9%,var(--permukaan));
+}
+
+/* Tanda: X = kayu gelap, O = lumut (dua bahan alam).
+   Terang butuh dicampur tinta biar kontras ny aman (>= 3:1);
+   di gelap token ny udah terang, cukup token polos. */
+html[data-ui="japandi"] .ttt-mark[data-tanda="X"],
+html[data-ui="japandi"] .ttt-coret[data-tanda="X"]{color:color-mix(in srgb,var(--kayu) 88%,var(--ink))}
+html[data-ui="japandi"] .ttt-mark[data-tanda="O"],
+html[data-ui="japandi"] .ttt-coret[data-tanda="O"]{color:var(--lumut)}
+html[data-ui="japandi"][data-tema="gelap"] .ttt-mark[data-tanda="X"],
+html[data-ui="japandi"][data-tema="gelap"] .ttt-coret[data-tanda="X"]{color:var(--kayu)}
+html[data-ui="japandi"][data-tema="gelap"] .ttt-mark[data-tanda="O"],
+html[data-ui="japandi"][data-tema="gelap"] .ttt-coret[data-tanda="O"]{color:var(--lumut)}
+html[data-ui="japandi"] .ttt-garis line{stroke:var(--lumut)}
+
+/* Kotak menang: tint lumut tenang. */
+html[data-ui="japandi"] .ttt-sel.menang::before{background:color-mix(in srgb,var(--lumut) 16%,transparent)}
+html[data-ui="japandi"] .ttt-sel.terakhir::after{background:var(--kayu)}
+
+/* Segmen ukuran/mode: pil hairline. */
+html[data-ui="japandi"] .ttt-seg,
+html[data-ui="japandi"] .g48-seg{border-color:var(--hair);border-radius:999px;overflow:hidden}
+html[data-ui="japandi"] .ttt-seg button,
+html[data-ui="japandi"] .g48-seg button{border-right-color:var(--hair)}
+
+/* Plat pemain: kartu kecil membulat; aktif = lumut penuh. */
+html[data-ui="japandi"] .ttt-plat{border-color:var(--hair);border-radius:12px}
+html[data-ui="japandi"] .ttt-plat.aktif{
+  background:var(--lumut);border-color:var(--lumut);color:var(--permukaan);
+  transform:none;box-shadow:none;
+}
+html[data-ui="japandi"] .ttt-plat.menang{border-color:var(--kayu);color:var(--ink);box-shadow:inset 0 -3px 0 var(--kayu)}
+
+/* Skor: angka mincho, pembatas hairline. */
+html[data-ui="japandi"] .ttt-skor{border-color:var(--hair);border-radius:var(--r);overflow:hidden}
+html[data-ui="japandi"] .ttt-sel-skor + .ttt-sel-skor{border-left-color:var(--hair)}
+html[data-ui="japandi"] .ttt-sel-skor b{font-family:var(--font-judul);font-weight:500;letter-spacing:0}
+
+/* Stempel: kertas putih lembut miring dikit (cap tangan). */
+html[data-ui="japandi"] .ttt-stempel{
+  border-width:1px;outline:0;border-radius:var(--r);box-shadow:var(--bayang);
+}
+html[data-ui="japandi"] .ttt-stempel.menang{background:var(--lumut);border-color:var(--lumut);color:var(--permukaan)}
+html[data-ui="japandi"] .ttt-stempel.menang small{color:var(--permukaan);opacity:.75}
+
+/* Kode room: ubin mincho lembut. */
+html[data-ui="japandi"] .ttt-kode span{
+  border:0;box-shadow:var(--bayang);border-radius:12px;
+  font-family:var(--font-judul);font-weight:500;
+}
+html[data-ui="japandi"] .ttt-kode span:nth-child(odd){transform:rotate(-1deg)}
+html[data-ui="japandi"] .ttt-kode span:nth-child(even){transform:rotate(.8deg)}
+
+/* Panel online: permukaan tenang. */
+html[data-ui="japandi"] .ttt-lobi,
+html[data-ui="japandi"] .ttt-nunggu{
+  background-image:none;background:var(--permukaan);
+  border:1px solid var(--hair);border-radius:var(--r-besar);
+}
+html[data-ui="japandi"] .ttt-gabung input{
+  border:1px solid var(--hair);border-radius:10px;
+}
+html[data-ui="japandi"] .ttt-gabung input:focus-visible{
+  outline:0;border-color:var(--lumut);box-shadow:0 0 0 3px color-mix(in srgb,var(--lumut) 22%,transparent);
+}
+html[data-ui="japandi"] .ttt-galat,
+html[data-ui="japandi"] .ttt-putus{
+  border:1px solid var(--hair);border-left:3px solid var(--lumut);
+  border-radius:10px;background:var(--permukaan);
+}
+html[data-ui="japandi"] .ttt-jejak i.ada{border-color:var(--lumut)}
+html[data-ui="japandi"] .ttt-jejak i.kini{background:color-mix(in srgb,var(--lumut) 14%,transparent);box-shadow:inset 0 -2px 0 var(--lumut)}
+
+/* Label samping: huruf biasa, pelan. */
+html[data-ui="japandi"] .ttt-judul-sisi,
+html[data-ui="japandi"] .g48-judul-sisi{
+  text-transform:none;letter-spacing:.05em;font-size:.82rem;font-weight:500;
+}
+
+/* ---------- 2048 Japandi: tangga kayu-lumut ---------- */
+html[data-ui="japandi"] .g48-papan{
+  border:0;background:var(--kilau);border-radius:var(--r);box-shadow:var(--bayang);
+}
+html[data-ui="japandi"] .g48-latar i{border:1px solid transparent;background:color-mix(in srgb,var(--kayu) 7%,var(--permukaan))}
+html[data-ui="japandi"] .g48-ubin,
+html[data-ui="japandi"] .g48-mini{border:0;border-radius:10px}
+/* Tangga: kayu makin pekat, puncak ny lumut lalu tinta.
+   (angka besar tebal -> teks besar, 3:1; tangga mini kecil -> 4.5:1) */
+html[data-ui="japandi"] .g48-ubin.l1{background:color-mix(in srgb,var(--kayu) 8%,var(--permukaan))}
+html[data-ui="japandi"] .g48-ubin.l2{background:color-mix(in srgb,var(--kayu) 15%,var(--permukaan))}
+html[data-ui="japandi"] .g48-ubin.l3{background:color-mix(in srgb,var(--kayu) 23%,var(--permukaan))}
+html[data-ui="japandi"] .g48-ubin.l4{background:color-mix(in srgb,var(--kayu) 33%,var(--permukaan))}
+html[data-ui="japandi"] .g48-ubin.l5{background:color-mix(in srgb,var(--kayu) 45%,var(--permukaan))}
+html[data-ui="japandi"] .g48-ubin.l6{background:color-mix(in srgb,var(--kayu) 58%,var(--permukaan))}
+html[data-ui="japandi"] .g48-ubin.l7{background:color-mix(in srgb,var(--kayu) 72%,var(--permukaan))}
+html[data-ui="japandi"] .g48-ubin.l8{background:color-mix(in srgb,var(--kayu) 86%,var(--permukaan))}
+html[data-ui="japandi"] .g48-ubin.l9{background:color-mix(in srgb,var(--lumut) 60%,var(--ink))}
+html[data-ui="japandi"] .g48-ubin.l10{background:color-mix(in srgb,var(--lumut) 40%,var(--ink))}
+html[data-ui="japandi"] .g48-ubin.l11{background:color-mix(in srgb,var(--lumut) 16%,var(--ink))}
+html[data-ui="japandi"] .g48-ubin.l12,
+html[data-ui="japandi"] .g48-ubin.l13{background:var(--ink)}
+/* Tangga mini di panel kanan pake versi ny sendiri biar
+   angka kecil ny tetap kebaca (tinta di ubin terang). */
+html[data-ui="japandi"] .g48-mini.l1{background:color-mix(in srgb,var(--kayu) 8%,var(--permukaan))}
+html[data-ui="japandi"] .g48-mini.l2{background:color-mix(in srgb,var(--kayu) 15%,var(--permukaan))}
+html[data-ui="japandi"] .g48-mini.l3{background:color-mix(in srgb,var(--kayu) 23%,var(--permukaan))}
+html[data-ui="japandi"] .g48-mini.l4{background:color-mix(in srgb,var(--kayu) 33%,var(--permukaan))}
+html[data-ui="japandi"] .g48-mini.l5{background:color-mix(in srgb,var(--kayu) 45%,var(--permukaan))}
+html[data-ui="japandi"] .g48-mini.l6{background:color-mix(in srgb,var(--kayu) 58%,var(--permukaan))}
+html[data-ui="japandi"] .g48-mini.l7{background:color-mix(in srgb,var(--kayu) 72%,var(--permukaan))}
+html[data-ui="japandi"] .g48-mini.l8{background:color-mix(in srgb,var(--kayu) 86%,var(--permukaan))}
+html[data-ui="japandi"] .g48-mini.l9{background:color-mix(in srgb,var(--lumut) 60%,var(--ink))}
+html[data-ui="japandi"] .g48-mini.l10{background:color-mix(in srgb,var(--lumut) 40%,var(--ink))}
+html[data-ui="japandi"] .g48-mini.l11{background:color-mix(in srgb,var(--lumut) 16%,var(--ink))}
+html[data-ui="japandi"] .g48-mini.l12,
+html[data-ui="japandi"] .g48-mini.l13{background:var(--ink)}
+/* Warna angka: terang = tinta sampai l8, terang di puncak. */
+html[data-ui="japandi"] .g48-ubin,
+html[data-ui="japandi"] .g48-mini{color:var(--ink)}
+html[data-ui="japandi"] .g48-ubin.l9,html[data-ui="japandi"] .g48-ubin.l10,
+html[data-ui="japandi"] .g48-ubin.l11,html[data-ui="japandi"] .g48-ubin.l12,
+html[data-ui="japandi"] .g48-ubin.l13,
+html[data-ui="japandi"] .g48-mini.l9,html[data-ui="japandi"] .g48-mini.l10,
+html[data-ui="japandi"] .g48-mini.l11,html[data-ui="japandi"] .g48-mini.l12,
+html[data-ui="japandi"] .g48-mini.l13{color:var(--permukaan)}
+/* Gelap: ubin kayu ny makin terang, angka ganti gelap mulai l6. */
+html[data-ui="japandi"][data-tema="gelap"] .g48-ubin.l6,
+html[data-ui="japandi"][data-tema="gelap"] .g48-ubin.l7,
+html[data-ui="japandi"][data-tema="gelap"] .g48-ubin.l8,
+html[data-ui="japandi"][data-tema="gelap"] .g48-mini.l6,
+html[data-ui="japandi"][data-tema="gelap"] .g48-mini.l7,
+html[data-ui="japandi"][data-tema="gelap"] .g48-mini.l8{color:var(--bg)}
+/* Permukaan ubin besar: ring dalam tenang, arsir dimatiin. */
+html[data-ui="japandi"] .g48-ubin.l9{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--permukaan) 30%,transparent)}
+html[data-ui="japandi"] .g48-ubin.l10{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--permukaan) 36%,transparent)}
+html[data-ui="japandi"] .g48-ubin.l11{box-shadow:inset 0 0 0 2px var(--permukaan),inset 0 0 0 3px color-mix(in srgb,var(--lumut) 45%,transparent)}
+html[data-ui="japandi"] .g48-ubin.l12,
+html[data-ui="japandi"] .g48-ubin.l13{box-shadow:inset 0 0 0 2px var(--permukaan),inset 0 0 0 3px color-mix(in srgb,var(--lumut) 45%,transparent),inset 0 0 0 5px var(--permukaan)}
+html[data-ui="japandi"] .g48-ubin.l10::after,html[data-ui="japandi"] .g48-ubin.l11::after,
+html[data-ui="japandi"] .g48-ubin.l12::after,html[data-ui="japandi"] .g48-ubin.l13::after,
+html[data-ui="japandi"] .g48-mini.l10::after,html[data-ui="japandi"] .g48-mini.l11::after,
+html[data-ui="japandi"] .g48-mini.l12::after,html[data-ui="japandi"] .g48-mini.l13::after{content:none}
+html[data-ui="japandi"] .g48-hud,
+html[data-ui="japandi"] .g48-stat{border-color:var(--hair);border-radius:var(--r);overflow:hidden}
+html[data-ui="japandi"] .g48-skor-sel + .g48-skor-sel,
+html[data-ui="japandi"] .g48-stat div:nth-child(2n),
+html[data-ui="japandi"] .g48-stat div:nth-child(n+3){border-color:var(--hair)}
+html[data-ui="japandi"] .g48-skor-sel b,
+html[data-ui="japandi"] .g48-stat b{font-family:var(--font-judul);font-weight:500;letter-spacing:0}
+html[data-ui="japandi"] .g48-bar{border-color:var(--hair);border-radius:999px}
+html[data-ui="japandi"] .g48-bar i{background:var(--lumut);border-radius:999px}
+html[data-ui="japandi"] .g48-rekor{border-color:var(--hair)}
+html[data-ui="japandi"] .g48-rekor-daftar li{border-color:var(--hair);border-radius:10px}
+html[data-ui="japandi"] .g48-rekor-daftar li.ini{border-color:var(--lumut);color:var(--ink)}
+html[data-ui="japandi"] .g48-cara li{border-top-color:var(--hair)}
+html[data-ui="japandi"] .g48-cara li:last-child{border-bottom-color:var(--hair)}
+html[data-ui="japandi"] .g48-stempel{
+  border-width:1px;outline:0;border-radius:var(--r);box-shadow:var(--bayang);transform:rotate(-1.2deg);
+}
+html[data-ui="japandi"] .g48-stempel.buntu{transform:rotate(1deg)}
+
+
+/* ============================================================
+   3. HANAMI — kelopak, sakura hemat, sudut petal
+   Bentuk khas ny: dua sudut membulat + dua sudut nyaris lancip
+   (var(--r)). X = sakura tua, O = hijau wakaba: musim semi
+   di atas papan. Permukaan setengah tembus di atas latar
+   kelopak yang berjatuhan.
+   ============================================================ */
+html[data-ui="hanami"] .ttt-kertas,
+html[data-ui="hanami"] .g48-kertas{
+  background-image:none;
+  background:color-mix(in srgb,var(--permukaan) 74%,transparent);
+  border:1px solid var(--hair);border-radius:var(--r-besar);
+  box-shadow:0 26px 54px -38px color-mix(in srgb,var(--sakura-tua) 60%,transparent);
+  padding:26px;
+}
+html[data-ui="hanami"] .ttt-kertas::before,
+html[data-ui="hanami"] .g48-kertas::before{content:none}
+
+/* Papan TTT: baki kelopak dengan sel putih. */
+html[data-ui="hanami"] .ttt-papan{
+  border:1px solid var(--hair);gap:5px;border-radius:var(--r);
+  background:color-mix(in srgb,var(--sakura) 13%,var(--permukaan));
+  box-shadow:0 18px 40px -30px color-mix(in srgb,var(--sakura-tua) 70%,transparent);
+  overflow:hidden;
+}
+html[data-ui="hanami"] .ttt-sel{background:var(--permukaan);border-radius:9px 3px 9px 3px}
+html[data-ui="hanami"] .ttt-papan[data-aktif="1"] .ttt-sel:not(.isi):hover{
+  background:color-mix(in srgb,var(--sakura) 18%,var(--permukaan));
+}
+
+/* Tanda: X = sakura tua, O = wakaba. Terang dicampur tinta
+   dulu biar kontras ny cukup; gelap pake token langsung. */
+html[data-ui="hanami"] .ttt-mark[data-tanda="X"],
+html[data-ui="hanami"] .ttt-coret[data-tanda="X"]{color:color-mix(in srgb,var(--sakura-tua) 85%,var(--ink))}
+html[data-ui="hanami"] .ttt-mark[data-tanda="O"],
+html[data-ui="hanami"] .ttt-coret[data-tanda="O"]{color:color-mix(in srgb,var(--wakaba) 95%,var(--ink))}
+html[data-ui="hanami"][data-tema="gelap"] .ttt-mark[data-tanda="X"],
+html[data-ui="hanami"][data-tema="gelap"] .ttt-coret[data-tanda="X"]{color:var(--sakura-tua)}
+html[data-ui="hanami"][data-tema="gelap"] .ttt-mark[data-tanda="O"],
+html[data-ui="hanami"][data-tema="gelap"] .ttt-coret[data-tanda="O"]{color:var(--wakaba)}
+html[data-ui="hanami"] .ttt-mark path{stroke-width:8}
+html[data-ui="hanami"] .ttt-garis line{stroke:var(--sakura-tua)}
+
+/* Kotak menang: rona sakura. */
+html[data-ui="hanami"] .ttt-sel.menang::before{background:color-mix(in srgb,var(--sakura) 22%,transparent)}
+html[data-ui="hanami"] .ttt-sel.terakhir::after{background:var(--sakura-tua)}
+
+/* Segmen: wadah petal. */
+html[data-ui="hanami"] .ttt-seg,
+html[data-ui="hanami"] .g48-seg{border-radius:var(--r);overflow:hidden}
+
+/* Plat pemain: petal; aktif = tinta (kayak .btn.primary). */
+html[data-ui="hanami"] .ttt-plat{border-color:var(--hair);border-radius:var(--r)}
+html[data-ui="hanami"] .ttt-plat.aktif{
+  background:var(--ink);border-color:var(--ink);color:var(--bg);
+  transform:none;box-shadow:none;
+}
+html[data-ui="hanami"] .ttt-plat.menang{border-color:var(--sakura-tua);color:var(--ink);box-shadow:inset 0 -3px 0 var(--sakura-tua)}
+
+/* Skor: petal, angka mincho. */
+html[data-ui="hanami"] .ttt-skor{border-color:var(--hair);border-radius:var(--r);overflow:hidden}
+html[data-ui="hanami"] .ttt-sel-skor + .ttt-sel-skor{border-left-color:var(--hair)}
+html[data-ui="hanami"] .ttt-sel-skor b{font-family:var(--font-judul);font-weight:500;letter-spacing:0}
+
+/* Stempel: kartu petal miring, bingkai sakura tua. */
+html[data-ui="hanami"] .ttt-stempel{
+  border:2px solid var(--sakura-tua);outline:0;border-radius:var(--r);
+  box-shadow:0 18px 40px -24px color-mix(in srgb,var(--sakura-tua) 80%,transparent);
+}
+html[data-ui="hanami"] .ttt-stempel.menang{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+html[data-ui="hanami"] .ttt-stempel.menang small{color:var(--bg);opacity:.75}
+html[data-ui="hanami"] .ttt-stempel.kalah{border-color:var(--hair)}
+
+/* Kode room: ubin mincho petal. */
+html[data-ui="hanami"] .ttt-kode span{
+  border:1px solid var(--hair);border-radius:var(--r);
+  box-shadow:0 14px 30px -20px color-mix(in srgb,var(--sakura-tua) 80%,transparent);
+  font-family:var(--font-judul);font-weight:500;
+}
+
+/* Panel online: kaca tipis petal. */
+html[data-ui="hanami"] .ttt-lobi,
+html[data-ui="hanami"] .ttt-nunggu{
+  background-image:none;
+  background:color-mix(in srgb,var(--permukaan) 78%,transparent);
+  border:1px solid var(--hair);border-radius:var(--r-besar);
+}
+html[data-ui="hanami"] .ttt-gabung input{border:1px solid var(--hair);border-radius:12px 3px 12px 3px}
+html[data-ui="hanami"] .ttt-gabung input:focus-visible{
+  outline:0;border-color:var(--sakura);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--sakura) 26%,transparent);
+}
+html[data-ui="hanami"] .ttt-galat,
+html[data-ui="hanami"] .ttt-putus{
+  border:1px solid var(--hair);border-left:3px solid var(--sakura-tua);
+  border-radius:12px 3px 12px 3px;
+  background:color-mix(in srgb,var(--permukaan) 82%,transparent);
+}
+html[data-ui="hanami"] .ttt-jejak i.ada{border-color:var(--sakura)}
+html[data-ui="hanami"] .ttt-jejak i.kini{background:color-mix(in srgb,var(--sakura) 18%,transparent);box-shadow:inset 0 -2px 0 var(--sakura-tua)}
+html[data-ui="hanami"] .ttt-judul-sisi,
+html[data-ui="hanami"] .g48-judul-sisi{
+  text-transform:none;letter-spacing:.07em;font-size:.82rem;font-weight:500;
+}
+
+/* ---------- 2048 Hanami: tangga sakura ---------- */
+html[data-ui="hanami"] .g48-papan{
+  border:1px solid var(--hair);border-radius:var(--r);
+  background:color-mix(in srgb,var(--sakura) 10%,var(--permukaan));
+  box-shadow:0 18px 40px -30px color-mix(in srgb,var(--sakura-tua) 70%,transparent);
+}
+html[data-ui="hanami"] .g48-latar i{border:1px solid transparent;background:color-mix(in srgb,var(--sakura) 8%,var(--permukaan))}
+html[data-ui="hanami"] .g48-ubin,
+html[data-ui="hanami"] .g48-mini{border:0;border-radius:10px 3px 10px 3px}
+/* Tangga: putih kelopak -> sakura -> sakura tua -> plum tinta. */
+html[data-ui="hanami"] .g48-ubin.l1,.g48-mini.l1{background:color-mix(in srgb,var(--sakura) 9%,var(--permukaan))}
+html[data-ui="hanami"] .g48-ubin.l2,.g48-mini.l2{background:color-mix(in srgb,var(--sakura) 16%,var(--permukaan))}
+html[data-ui="hanami"] .g48-ubin.l3{background:color-mix(in srgb,var(--sakura) 24%,var(--permukaan))}
+html[data-ui="hanami"] .g48-ubin.l4{background:color-mix(in srgb,var(--sakura) 34%,var(--permukaan))}
+html[data-ui="hanami"] .g48-ubin.l5{background:color-mix(in srgb,var(--sakura) 46%,var(--permukaan))}
+html[data-ui="hanami"] .g48-ubin.l6{background:color-mix(in srgb,var(--sakura) 59%,var(--permukaan))}
+html[data-ui="hanami"] .g48-ubin.l7{background:color-mix(in srgb,var(--sakura) 73%,var(--permukaan))}
+html[data-ui="hanami"] .g48-ubin.l8{background:color-mix(in srgb,var(--sakura) 88%,var(--permukaan))}
+html[data-ui="hanami"] .g48-ubin.l9,.g48-mini.l9{background:var(--sakura-tua)}
+html[data-ui="hanami"] .g48-ubin.l10{background:color-mix(in srgb,var(--sakura-tua) 55%,var(--ink))}
+html[data-ui="hanami"] .g48-ubin.l11{background:color-mix(in srgb,var(--sakura-tua) 24%,var(--ink))}
+html[data-ui="hanami"] .g48-ubin.l12,
+html[data-ui="hanami"] .g48-ubin.l13{background:var(--ink)}
+html[data-ui="hanami"] .g48-mini.l3{background:color-mix(in srgb,var(--sakura) 24%,var(--permukaan))}
+html[data-ui="hanami"] .g48-mini.l4{background:color-mix(in srgb,var(--sakura) 34%,var(--permukaan))}
+html[data-ui="hanami"] .g48-mini.l5{background:color-mix(in srgb,var(--sakura) 46%,var(--permukaan))}
+html[data-ui="hanami"] .g48-mini.l6{background:color-mix(in srgb,var(--sakura) 59%,var(--permukaan))}
+html[data-ui="hanami"] .g48-mini.l7{background:color-mix(in srgb,var(--sakura) 73%,var(--permukaan))}
+html[data-ui="hanami"] .g48-mini.l8{background:color-mix(in srgb,var(--sakura) 88%,var(--permukaan))}
+html[data-ui="hanami"] .g48-mini.l10{background:color-mix(in srgb,var(--sakura-tua) 55%,var(--ink))}
+html[data-ui="hanami"] .g48-mini.l11{background:color-mix(in srgb,var(--sakura-tua) 24%,var(--ink))}
+html[data-ui="hanami"] .g48-mini.l12,
+html[data-ui="hanami"] .g48-mini.l13{background:var(--ink)}
+/* Warna angka: tinta sampai l9, terang di puncak.
+   (l9 = sakura tua, tinta di atas ny 4.6:1 -> aman juga buat
+   angka mini). */
+html[data-ui="hanami"] .g48-ubin,
+html[data-ui="hanami"] .g48-mini{color:var(--ink)}
+html[data-ui="hanami"] .g48-ubin.l10,html[data-ui="hanami"] .g48-ubin.l11,
+html[data-ui="hanami"] .g48-ubin.l12,html[data-ui="hanami"] .g48-ubin.l13,
+html[data-ui="hanami"] .g48-mini.l10,html[data-ui="hanami"] .g48-mini.l11,
+html[data-ui="hanami"] .g48-mini.l12,html[data-ui="hanami"] .g48-mini.l13{color:var(--permukaan)}
+/* Gelap: ubin makin terang, angka gelap mulai l6. */
+html[data-ui="hanami"][data-tema="gelap"] .g48-ubin.l6,
+html[data-ui="hanami"][data-tema="gelap"] .g48-ubin.l7,
+html[data-ui="hanami"][data-tema="gelap"] .g48-ubin.l8,
+html[data-ui="hanami"][data-tema="gelap"] .g48-mini.l6,
+html[data-ui="hanami"][data-tema="gelap"] .g48-mini.l7,
+html[data-ui="hanami"][data-tema="gelap"] .g48-mini.l8{color:var(--bg)}
+/* Permukaan ubin besar: ring lembut, arsir dimatiin. */
+html[data-ui="hanami"] .g48-ubin.l9{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--permukaan) 35%,transparent)}
+html[data-ui="hanami"] .g48-ubin.l10{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--permukaan) 40%,transparent)}
+html[data-ui="hanami"] .g48-ubin.l11{box-shadow:inset 0 0 0 2px var(--permukaan),inset 0 0 0 3px color-mix(in srgb,var(--sakura-tua) 50%,transparent)}
+html[data-ui="hanami"] .g48-ubin.l12,
+html[data-ui="hanami"] .g48-ubin.l13{box-shadow:inset 0 0 0 2px var(--permukaan),inset 0 0 0 3px color-mix(in srgb,var(--sakura-tua) 50%,transparent),inset 0 0 0 5px var(--permukaan)}
+html[data-ui="hanami"] .g48-ubin.l10::after,html[data-ui="hanami"] .g48-ubin.l11::after,
+html[data-ui="hanami"] .g48-ubin.l12::after,html[data-ui="hanami"] .g48-ubin.l13::after,
+html[data-ui="hanami"] .g48-mini.l10::after,html[data-ui="hanami"] .g48-mini.l11::after,
+html[data-ui="hanami"] .g48-mini.l12::after,html[data-ui="hanami"] .g48-mini.l13::after{content:none}
+html[data-ui="hanami"] .g48-hud,
+html[data-ui="hanami"] .g48-stat{border-color:var(--hair);border-radius:var(--r);overflow:hidden}
+html[data-ui="hanami"] .g48-skor-sel + .g48-skor-sel,
+html[data-ui="hanami"] .g48-stat div:nth-child(2n),
+html[data-ui="hanami"] .g48-stat div:nth-child(n+3){border-color:var(--hair)}
+html[data-ui="hanami"] .g48-skor-sel b,
+html[data-ui="hanami"] .g48-stat b{font-family:var(--font-judul);font-weight:500;letter-spacing:0}
+html[data-ui="hanami"] .g48-bar{border-color:var(--hair);border-radius:999px}
+html[data-ui="hanami"] .g48-bar i{background:var(--sakura-tua);border-radius:999px}
+html[data-ui="hanami"] .g48-rekor{border-color:var(--hair)}
+html[data-ui="hanami"] .g48-rekor-daftar li{border-color:var(--hair);border-radius:12px 3px 12px 3px}
+html[data-ui="hanami"] .g48-rekor-daftar li.ini{border-color:var(--sakura-tua);color:var(--ink)}
+html[data-ui="hanami"] .g48-cara li{border-top-color:var(--hair)}
+html[data-ui="hanami"] .g48-cara li:last-child{border-bottom-color:var(--hair)}
+html[data-ui="hanami"] .g48-stempel{
+  border-color:var(--sakura-tua);outline:0;border-radius:var(--r);
+  box-shadow:0 18px 40px -24px color-mix(in srgb,var(--sakura-tua) 80%,transparent);
+}
+html[data-ui="hanami"] .g48-stempel.buntu{border-color:var(--hair)}
+
+
+/* ============================================================
+   4. Dropdown PilihOpsi — dipakai PapanSkor, EditGambar,
+   Profil, PanelAio. Bentuk globals ny brutalis (kotak tajam,
+   bayangan keras, hover geser); di tema lain ny berubah ikut
+   bahasa ny masing-masing. Klasik gak disentuh.
+   ============================================================ */
+
+/* ---------- Swiss: kotak hairline, hover blok, tanpa geser ---------- */
+html[data-ui="swiss"] .po-tombol{
+  border-radius:0;background:transparent;
+  transition:background .2s ease;
+}
+html[data-ui="swiss"] .po-tombol:hover:not(:disabled){background:var(--kilau)}
+html[data-ui="swiss"] .po-tombol .po-chev{transition:transform .2s var(--ease)}
+html[data-ui="swiss"] .po-daftar{
+  border-radius:0;box-shadow:none;animation:none;
+}
+html[data-ui="swiss"] .po-opsi.kincong,
+html[data-ui="swiss"] .po-opsi:hover{transform:none}
+html[data-ui="swiss"] .po-grup{letter-spacing:.14em}
+
+/* ---------- Japandi: pil linen, daftar lembut ---------- */
+html[data-ui="japandi"] .po-tombol{
+  min-height:46px;border:1px solid var(--hair);border-radius:999px;
+  background:var(--permukaan);
+  transition:background .3s var(--ease),border-color .3s var(--ease);
+}
+html[data-ui="japandi"] .po-tombol:hover:not(:disabled){background:var(--kilau)}
+html[data-ui="japandi"] .po-daftar{
+  border:1px solid var(--hair);border-radius:var(--r);
+  box-shadow:0 24px 70px -20px rgba(40,32,20,.35);padding:6px;
+}
+html[data-ui="japandi"][data-tema="gelap"] .po-daftar{box-shadow:0 24px 70px -20px rgba(0,0,0,.7)}
+html[data-ui="japandi"] .po-opsi{border-radius:10px}
+html[data-ui="japandi"] .po-opsi.kincong,
+html[data-ui="japandi"] .po-opsi:hover{transform:none}
+html[data-ui="japandi"] .po-opsi.aktif::before{background:var(--lumut)}
+html[data-ui="japandi"] .po-opsi.aktif svg{color:var(--lumut)}
+html[data-ui="japandi"] .po-grup{
+  text-transform:none;letter-spacing:.04em;font-size:.78rem;font-weight:500;
+}
+
+/* ---------- Hanami: petal, fokus sakura ---------- */
+html[data-ui="hanami"] .po-tombol{
+  min-height:46px;border:1px solid var(--hair);border-radius:var(--r);
+  background:var(--permukaan);
+  transition:background .3s var(--ease),border-color .3s var(--ease);
+}
+html[data-ui="hanami"] .po-tombol:hover:not(:disabled){background:var(--kilau)}
+html[data-ui="hanami"] .po-daftar{
+  border:1px solid var(--hair);border-radius:var(--r);padding:6px;
+  box-shadow:0 24px 70px -20px color-mix(in srgb,var(--sakura-tua) 55%,transparent);
+}
+html[data-ui="hanami"] .po-opsi{border-radius:12px 3px 12px 3px}
+html[data-ui="hanami"] .po-opsi.kincong,
+html[data-ui="hanami"] .po-opsi:hover{transform:none}
+html[data-ui="hanami"] .po-opsi.aktif::before{background:var(--sakura-tua)}
+html[data-ui="hanami"] .po-opsi.aktif svg{color:var(--sakura-tua)}
+html[data-ui="hanami"] .po-grup{
+  text-transform:none;letter-spacing:.06em;font-size:.78rem;font-weight:500;
+}
+
+
+/* ============================================================
+   5. HP + gerak
+   ============================================================ */
+@media(max-width:420px){
+  html[data-ui="japandi"] .ttt-kertas,
+  html[data-ui="japandi"] .g48-kertas,
+  html[data-ui="hanami"] .ttt-kertas,
+  html[data-ui="hanami"] .g48-kertas{padding:16px}
+}
+@media(prefers-reduced-motion:reduce){
+  html[data-ui="japandi"] .ttt-kode span,
+  html[data-ui="hanami"] .ttt-kode span{transform:none}
+}

@@ -1,0 +1,470 @@
+/* ============================================================
+   Ruang Obrol — lapisan tema.
+   Satu ruang obrolan, empat kepribadian. Semua rule di-scope
+   .ruang-obrol (atau .obrol-tamu / .obrol-pintu) + html[data-ui],
+   jadi Chat AI (yang juga pake .ruang) GAK ikut berubah.
+
+   Dimuat PALING AKHIR (setelah globals, swiss-zen, japandi,
+   hanami) — lihat layout.tsx. Terang/gelap otomatis jalan
+   karena semua warna ngambil token tiap tema (--bg, --ink,
+   --permukaan, --lumut, --sakura, dst), gak ada warna mati.
+
+   Isi file:
+     0. Dasar bersama (token, avatar, ilustrasi, lebar gelembung)
+     1. Klasik  — versi di-enhance dikit (kertas titik, bayangan
+                  keras ala tombol, avatar kotak, denyut daring)
+     2. Swiss   — hairline, label kapital, blok datar, kisi
+     3. Japandi — linen, kayu, lumut, pil lembut, gerak pelan
+     4. Hanami  — sudut kelopak, sakura, kaca bening, melayang
+   ============================================================ */
+
+/* ---------- 0. Dasar bersama ---------- */
+.ruang-obrol{
+  --av:30px;--av-gap:9px;
+  /* Token warna gelembung: nilai default = tampilan klasik lama
+     persis. Tema lain tinggal menimpa token ini. */
+  --o-bg-lain:var(--bg);
+  --o-bg-sendiri:var(--ink);
+  --o-fg-sendiri:var(--bg);
+  --o-jam-sendiri:color-mix(in srgb,var(--bg) 62%,var(--ink));
+  --o-aksen:var(--ink);
+  position:relative;
+}
+html[data-chat-size="sedang"] .ruang-obrol{--av:27px;--av-gap:8px}
+html[data-chat-size="kecil"] .ruang-obrol{--av:23px;--av-gap:7px}
+
+/* Gelembung ngikut token (biar sorot kilat + varian sendiri konsisten). */
+.ruang-obrol .gelembung{--o-bg-ini:var(--o-bg-lain);background:var(--o-bg-ini)}
+.ruang-obrol .sendiri .gelembung{--o-bg-ini:var(--o-bg-sendiri);color:var(--o-fg-sendiri)}
+.ruang-obrol .sendiri .jam-kaki{color:var(--o-jam-sendiri)}
+.ruang-obrol .sendiri .balas-konteks{color:var(--o-fg-sendiri)}
+@keyframes obrol-sorot{0%,100%{background:var(--o-bg-ini)}30%{background:var(--kilau)}}
+.ruang-obrol .baris-pesan.sorot .gelembung{animation:obrol-sorot 1.4s ease 2}
+
+/* Avatar inisial: nongol di gelembung TERAKHIR tiap kelompok pesan
+   orang lain (bareng jam-kaki). Gelembung lain di kelompok yang sama
+   dapet spacer transparan biar kolomnya lurus. Lebarnya diambil dari
+   jatah gelembung (bukan ditambah), jadi ruang kosong buat tombol
+   balas / tanda pilih di sisi kanan tetep sama kayak sebelumnya. */
+.ruang-obrol .baris-pesan:not(.sendiri){gap:var(--av-gap)}
+.ruang-obrol .baris-pesan:not(.sendiri) .badan-pesan{max-width:min(calc(78% - var(--av) - var(--av-gap)),520px)}
+.ruang-obrol .avatar-pesan{
+  flex:none;width:var(--av);height:var(--av);display:inline-flex;align-items:center;justify-content:center;
+  font-size:calc(var(--av) * .4);font-weight:700;line-height:1;text-transform:uppercase;
+  user-select:none;overflow:hidden;
+}
+.ruang-obrol .avatar-pesan.kosong{visibility:hidden}
+@media(max-width:560px){
+  .ruang-obrol .baris-pesan:not(.sendiri) .badan-pesan{max-width:calc(100% - var(--av) - var(--av-gap) - 40px)}
+}
+
+/* Ilustrasi: semua versi ada di DOM, CSS nampilin yang cocok sama
+   tema aktif. Ganti tema = langsung ganti, tanpa state React. */
+.ruang-obrol .hias{display:none;width:100%;height:100%}
+html[data-ui="klasik"] .ruang-obrol .hias-klasik,
+html[data-ui="swiss"] .ruang-obrol .hias-swiss,
+html[data-ui="japandi"] .ruang-obrol .hias-japandi,
+html[data-ui="hanami"] .ruang-obrol .hias-hanami{display:block}
+.ruang-obrol .kosong-hias{display:block;width:76px;height:76px;margin:0 auto 18px}
+.ruang-obrol .obrol-lencana{flex:none;display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px}
+.ruang-obrol .hias .bg{fill:var(--bg)}
+.ruang-obrol .hias-japandi .batu1{fill:var(--kayu);opacity:.62}
+.ruang-obrol .hias-japandi .batu2{fill:var(--muted);opacity:.5}
+.ruang-obrol .hias-japandi .batu3{fill:var(--lumut);opacity:.9}
+.ruang-obrol .hias-japandi .garis{stroke:var(--muted);opacity:.55}
+.ruang-obrol .hias-japandi .matahari{fill:var(--kayu);opacity:.35}
+.ruang-obrol .hias-hanami .kelopak-hias{fill:color-mix(in srgb,var(--sakura) 55%,var(--permukaan,var(--bg)));stroke:var(--sakura-tua);stroke-width:1.3;stroke-linejoin:round}
+.ruang-obrol .hias-hanami .putik{fill:var(--wakaba)}
+
+/* Kepala ruang: judul 1 baris, status nempel kanan; di HP subjudul disembunyiin
+   (toh udah kepotong elipsis) biar "Obrolan Global" gak kebelah dua. */
+.ruang-obrol .ruang-kepala .judul h2{white-space:nowrap}
+@media(max-width:560px){
+  .ruang-obrol .ruang-kepala{flex-wrap:nowrap;gap:10px}
+  .ruang-obrol .ruang-kepala .judul{flex:1 1 auto;min-width:0;gap:10px}
+  .ruang-obrol .ruang-kepala .judul p{display:none}
+}
+
+/* Pemisah hari: teksnya sekarang dibungkus <span> biar bisa dijadiin chip. */
+.ruang-obrol .pemisah span{display:inline-block;white-space:nowrap}
+
+
+/* ============================================================
+   1. KLASIK (enhanced dikit)
+   ============================================================ */
+html[data-ui="klasik"] .ruang-obrol{box-shadow:6px 6px 0 color-mix(in srgb,var(--ink) 9%,transparent)}
+html[data-ui="klasik"] .ruang-obrol .ruang-kepala{background:linear-gradient(90deg,var(--kilau),transparent 70%)}
+html[data-ui="klasik"] .ruang-obrol .obrol-lencana{
+  width:36px;height:36px;padding:6px;border:1px solid var(--ink);background:var(--bg);color:var(--ink);
+  box-shadow:2px 2px 0 color-mix(in srgb,var(--ink) 16%,transparent);
+}
+
+/* Status daring: titik berdenyut kalau nyambung. */
+html[data-ui="klasik"] .ruang-obrol .daring .titik{position:relative}
+html[data-ui="klasik"] .ruang-obrol .daring.nyala{color:var(--ink);border-color:var(--ink);font-variant-numeric:tabular-nums}
+html[data-ui="klasik"] .ruang-obrol .daring.nyala .titik::after{
+  content:"";position:absolute;inset:-4px;border:1px solid var(--ink);opacity:0;
+  animation:obrol-denyut 1.9s ease-out infinite;
+}
+@keyframes obrol-denyut{0%{transform:scale(.55);opacity:.6}100%{transform:scale(1.7);opacity:0}}
+
+/* Area pesan: kertas bertitik, ikut gulir bareng isi. */
+html[data-ui="klasik"] .ruang-obrol .daftar-chat{
+  background-image:radial-gradient(color-mix(in srgb,var(--ink) 14%,transparent) 1px,transparent 1.35px);
+  background-size:20px 20px;background-attachment:local;
+}
+
+/* Gelembung: bayangan keras (saudara hover tombol), penanda kecil di nama. */
+html[data-ui="klasik"] .ruang-obrol .gelembung{box-shadow:3px 3px 0 color-mix(in srgb,var(--ink) 12%,transparent)}
+html[data-ui="klasik"] .ruang-obrol .kepala-pesan .nama{display:inline-flex;align-items:center;gap:6px}
+html[data-ui="klasik"] .ruang-obrol .kepala-pesan .nama::before{content:"";flex:none;width:5px;height:5px;background:var(--ink)}
+html[data-ui="klasik"] .ruang-obrol .balas-konteks{border-left-width:3px}
+
+/* Avatar kotak: lima varian monokrom (polos, solid, arsir, tint, titik). */
+html[data-ui="klasik"] .ruang-obrol .avatar-pesan{
+  border:1px solid var(--ink);background:var(--bg);color:var(--ink);
+  box-shadow:2px 2px 0 color-mix(in srgb,var(--ink) 14%,transparent);
+}
+html[data-ui="klasik"] .ruang-obrol .avatar-pesan[data-w="1"]{background:var(--ink);color:var(--bg)}
+html[data-ui="klasik"] .ruang-obrol .avatar-pesan[data-w="2"]{
+  background:repeating-linear-gradient(135deg,transparent 0 3px,color-mix(in srgb,var(--ink) 24%,transparent) 3px 4px),var(--bg);
+}
+html[data-ui="klasik"] .ruang-obrol .avatar-pesan[data-w="3"]{background:var(--kilau)}
+html[data-ui="klasik"] .ruang-obrol .avatar-pesan[data-w="4"]{
+  background:radial-gradient(color-mix(in srgb,var(--ink) 34%,transparent) 1px,transparent 1.4px) 0 0/6px 6px,var(--bg);
+}
+
+/* Pemisah hari: chip kotak. */
+html[data-ui="klasik"] .ruang-obrol .pemisah span{padding:4px 12px;border:1px solid var(--ink);background:var(--bg);color:var(--ink);letter-spacing:.1em}
+
+/* Indikator nulis: kotak melompat. */
+html[data-ui="klasik"] .ruang-obrol .bar-menulis .ketik i{background:var(--ink);animation:obrol-lompat 1.1s ease-in-out infinite}
+html[data-ui="klasik"] .ruang-obrol .bar-menulis .ketik i:nth-child(2){animation-delay:.14s}
+html[data-ui="klasik"] .ruang-obrol .bar-menulis .ketik i:nth-child(3){animation-delay:.28s}
+@keyframes obrol-lompat{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-4px);opacity:1}}
+
+/* Komposer: fokus = naik kayak tombol hover, bayangan keras. */
+html[data-ui="klasik"] .ruang-obrol .komposer{background:var(--kilau)}
+html[data-ui="klasik"] .ruang-obrol .komposer textarea{transition:transform .18s var(--ease),box-shadow .18s var(--ease)}
+html[data-ui="klasik"] .ruang-obrol .komposer textarea:focus-visible{outline:0;transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--ink)}
+html[data-ui="klasik"] .ruang-obrol .balas-bar{border-left:3px solid var(--ink)}
+html[data-ui="klasik"] .ruang-obrol .kosong{background:repeating-linear-gradient(45deg,transparent 0 9px,color-mix(in srgb,var(--ink) 4%,transparent) 9px 10px)}
+html[data-ui="klasik"] .ruang-obrol .kosong-hias{color:var(--ink)}
+
+
+/* ============================================================
+   2. SWISS ZEN — hairline, datar, label kapital
+   ============================================================ */
+html[data-ui="swiss"] .ruang-obrol{
+  --o-bg-lain:var(--kilau);
+  --av:26px;
+  border:0;border-top:1px solid var(--ink);border-bottom:var(--garis-tipis);
+  background:color-mix(in srgb,var(--bg) 80%,transparent);
+}
+html[data-ui="swiss"] .ruang-obrol .ruang-kepala{border-bottom:var(--garis-tipis);padding-left:0;padding-right:0}
+html[data-ui="swiss"] .ruang-obrol .ruang-kepala .judul h2{font-size:.72rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase}
+html[data-ui="swiss"] .ruang-obrol .ruang-kepala .judul p{font-size:.78rem;font-weight:300}
+html[data-ui="swiss"] .ruang-obrol .obrol-lencana{width:22px;height:22px;color:var(--muted)}
+html[data-ui="swiss"] .ruang-obrol .daring{border:0;padding:0;min-height:0;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;font-variant-numeric:tabular-nums}
+html[data-ui="swiss"] .ruang-obrol .daring .titik{width:6px;height:6px}
+html[data-ui="swiss"] .ruang-obrol .daring.nyala{color:var(--ink)}
+
+html[data-ui="swiss"] .ruang-obrol .gelembung{
+  border:0;border-left:2px solid var(--ink);border-radius:0;box-shadow:none;
+}
+html[data-ui="swiss"] .ruang-obrol .sendiri .gelembung{border-left:0;border-radius:0}
+html[data-ui="swiss"] .ruang-obrol .kepala-pesan .nama{font-size:.66rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+html[data-ui="swiss"] .ruang-obrol .jam-kaki{letter-spacing:.06em}
+html[data-ui="swiss"] .ruang-obrol .balas-konteks{border-left-width:1px;border-radius:0}
+
+html[data-ui="swiss"] .ruang-obrol .avatar-pesan{
+  border:1px solid var(--ink);border-radius:0;background:transparent;color:var(--ink);
+  font-weight:500;letter-spacing:.06em;font-size:calc(var(--av) * .36);
+}
+html[data-ui="swiss"] .ruang-obrol .avatar-pesan[data-w="1"],
+html[data-ui="swiss"] .ruang-obrol .avatar-pesan[data-w="3"]{border-color:var(--hair);color:var(--muted)}
+
+/* Pemisah: garis pendek tinta, label kapital, garis tipis memanjang. */
+html[data-ui="swiss"] .ruang-obrol .pemisah{gap:12px;font-size:.64rem;letter-spacing:.18em;color:var(--muted)}
+html[data-ui="swiss"] .ruang-obrol .pemisah::before{flex:none;width:24px;background:var(--ink)}
+
+html[data-ui="swiss"] .ruang-obrol .bar-menulis{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase}
+html[data-ui="swiss"] .ruang-obrol .bar-menulis .ketik{gap:4px}
+html[data-ui="swiss"] .ruang-obrol .bar-menulis .ketik i{width:10px;height:1px;background:var(--ink);animation:obrol-garis 1.2s ease-in-out infinite}
+html[data-ui="swiss"] .ruang-obrol .bar-menulis .ketik i:nth-child(2){animation-delay:.15s}
+html[data-ui="swiss"] .ruang-obrol .bar-menulis .ketik i:nth-child(3){animation-delay:.3s}
+@keyframes obrol-garis{0%,100%{transform:scaleX(.3);opacity:.35}50%{transform:scaleX(1);opacity:1}}
+
+html[data-ui="swiss"] .ruang-obrol .komposer{border-top:1px solid var(--ink);background:transparent;align-items:flex-end;padding-left:0;padding-right:0}
+html[data-ui="swiss"] .ruang-obrol .komposer textarea{
+  border:0;border-bottom:1px solid var(--ink);border-radius:0;background:transparent;padding:11px 0;
+}
+html[data-ui="swiss"] .ruang-obrol .komposer textarea:focus,
+html[data-ui="swiss"] .ruang-obrol .komposer textarea:focus-visible{outline:0;box-shadow:0 1px 0 var(--ink)}
+html[data-ui="swiss"] .ruang-obrol .balas-bar{background:transparent;border-left:1px solid var(--ink)}
+html[data-ui="swiss"] .ruang-obrol .bar-pilih{background:transparent}
+html[data-ui="swiss"] .ruang-obrol .tombol-balas{border-radius:0}
+html[data-ui="swiss"] .ruang-obrol .tanda-kotak{border-radius:0}
+html[data-ui="swiss"] .ruang-obrol .kosong{border:0;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);font-size:.85rem;letter-spacing:.02em}
+html[data-ui="swiss"] .ruang-obrol .kosong-hias{width:64px;height:64px;color:var(--ink)}
+html[data-ui="swiss"] .ruang-obrol .chip-turun button,
+html[data-ui="swiss"] .ruang-obrol .chip-umpan{box-shadow:none;border-radius:0}
+html[data-ui="swiss"] .obrol-tamu{border:0;border-top:1px solid var(--ink);border-bottom:var(--garis-tipis);padding-left:0;padding-right:0}
+html[data-ui="swiss"] .obrol-tamu .ganti{font-size:.7rem;letter-spacing:.14em;text-transform:uppercase}
+html[data-ui="swiss"] .obrol-pintu{border:0;border-top:1px solid var(--ink);border-bottom:var(--garis-tipis)}
+
+/* Gerak: muncul geser tipis dari sisi pengirim. */
+html[data-ui="swiss"] .ruang-obrol .baris-pesan.baru{animation:obrol-swiss-masuk .3s var(--ease) both}
+html[data-ui="swiss"] .ruang-obrol .baris-pesan.sendiri.baru{animation-name:obrol-swiss-masuk-kanan}
+@keyframes obrol-swiss-masuk{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+@keyframes obrol-swiss-masuk-kanan{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none}}
+
+
+/* ============================================================
+   3. JAPANDI — linen, kayu, lumut, lembut dan pelan
+   ============================================================ */
+html[data-ui="japandi"] .ruang-obrol{
+  --o-bg-lain:var(--permukaan);
+  --o-bg-sendiri:color-mix(in srgb,var(--lumut) 24%,var(--permukaan));
+  --o-fg-sendiri:var(--ink);
+  --o-jam-sendiri:var(--muted);
+  --o-aksen:var(--lumut);
+  --av:32px;--av-gap:10px;
+  --bayang-gelembung:0 1px 2px rgba(60,50,35,.06),0 10px 22px -16px rgba(60,50,35,.38);
+  border:0;border-radius:var(--r-besar);background:var(--permukaan);box-shadow:var(--bayang);overflow:hidden;
+}
+html[data-ui="japandi"][data-tema="gelap"] .ruang-obrol{--bayang-gelembung:0 1px 2px rgba(0,0,0,.3),0 10px 22px -16px rgba(0,0,0,.7)}
+html[data-ui="japandi"][data-chat-size="sedang"] .ruang-obrol{--av:29px}
+html[data-ui="japandi"][data-chat-size="kecil"] .ruang-obrol{--av:25px}
+
+html[data-ui="japandi"] .ruang-obrol .ruang-kepala{
+  padding:20px 28px;border-bottom:1px solid var(--hair);
+  background:color-mix(in srgb,var(--kilau) 45%,var(--permukaan));
+}
+html[data-ui="japandi"] .ruang-obrol .ruang-kepala .judul h2{font-family:var(--font-judul);font-size:1.25rem;font-weight:500;letter-spacing:.03em}
+html[data-ui="japandi"] .ruang-obrol .ruang-kepala .judul p{font-weight:300;letter-spacing:.02em}
+html[data-ui="japandi"] .ruang-obrol .obrol-lencana{width:40px;height:40px;padding:7px;border-radius:50%;background:var(--kilau);color:var(--ink)}
+
+html[data-ui="japandi"] .ruang-obrol .daring{min-height:34px;padding:0 16px;border:0;border-radius:999px;background:var(--kilau)}
+html[data-ui="japandi"] .ruang-obrol .daring .titik{border-radius:50%}
+html[data-ui="japandi"] .ruang-obrol .daring.nyala .titik{background:var(--lumut)}
+
+/* Area pesan: linen berserat + bayangan tepi tipis seperti ceruk. */
+html[data-ui="japandi"] .ruang-obrol .daftar-chat{
+  background-color:var(--bg);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .38 0 0 0 0 .32 0 0 0 0 .22 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.3'/%3E%3C/svg%3E");
+  background-attachment:local;
+  box-shadow:inset 0 14px 14px -16px rgba(60,50,35,.28),inset 0 -14px 14px -16px rgba(60,50,35,.22);
+}
+html[data-ui="japandi"][data-tema="gelap"] .ruang-obrol .daftar-chat{box-shadow:inset 0 14px 14px -16px rgba(0,0,0,.6),inset 0 -14px 14px -16px rgba(0,0,0,.5)}
+
+html[data-ui="japandi"] .ruang-obrol .gelembung{
+  border:0;border-radius:20px 20px 20px 6px;box-shadow:var(--bayang-gelembung);
+  padding-left:calc(var(--chat-pad-x,14px) + 3px);padding-right:calc(var(--chat-pad-x,14px) + 3px);
+}
+html[data-ui="japandi"] .ruang-obrol .sendiri .gelembung{
+  border-radius:20px 20px 6px 20px;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--lumut) 32%,transparent);
+}
+html[data-ui="japandi"] .ruang-obrol .kepala-pesan .nama{font-family:var(--font-isi);font-size:.76rem;font-weight:400;letter-spacing:.04em;color:var(--muted)}
+html[data-ui="japandi"] .ruang-obrol .balas-konteks{
+  border-left:2px solid var(--lumut);border-radius:2px 8px 8px 2px;background:color-mix(in srgb,var(--ink) 5%,transparent);
+  padding-left:10px;opacity:1;color:var(--muted);
+}
+html[data-ui="japandi"] .ruang-obrol .sendiri .balas-konteks{color:var(--muted);opacity:1}
+
+html[data-ui="japandi"] .ruang-obrol .avatar-pesan{
+  --c:var(--lumut);
+  border-radius:50%;font-family:var(--font-judul);font-weight:500;
+  background:color-mix(in srgb,var(--c) 26%,var(--permukaan));
+  color:color-mix(in srgb,var(--c) 56%,var(--ink));
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 28%,transparent);
+}
+html[data-ui="japandi"] .ruang-obrol .avatar-pesan[data-w="1"]{--c:var(--kayu)}
+html[data-ui="japandi"] .ruang-obrol .avatar-pesan[data-w="2"]{--c:#7F8F96}
+html[data-ui="japandi"] .ruang-obrol .avatar-pesan[data-w="3"]{--c:#A07A6E}
+html[data-ui="japandi"] .ruang-obrol .avatar-pesan[data-w="4"]{--c:#9A9367}
+
+html[data-ui="japandi"] .ruang-obrol .pemisah{justify-content:center;margin:26px 0 16px}
+html[data-ui="japandi"] .ruang-obrol .pemisah::before,
+html[data-ui="japandi"] .ruang-obrol .pemisah::after{display:none}
+html[data-ui="japandi"] .ruang-obrol .pemisah span{padding:4px 16px;border-radius:999px;background:var(--kilau);color:var(--muted);font-size:.74rem;letter-spacing:.05em;text-transform:none}
+
+html[data-ui="japandi"] .ruang-obrol .bar-menulis .ketik i{width:5px;height:5px;border-radius:50%;background:var(--lumut);animation:obrol-titik-pelan 1.8s ease-in-out infinite}
+html[data-ui="japandi"] .ruang-obrol .bar-menulis .ketik i:nth-child(2){animation-delay:.25s}
+html[data-ui="japandi"] .ruang-obrol .bar-menulis .ketik i:nth-child(3){animation-delay:.5s}
+@keyframes obrol-titik-pelan{0%,100%{transform:scale(.6);opacity:.35}50%{transform:scale(1);opacity:1}}
+
+html[data-ui="japandi"] .ruang-obrol .komposer{padding:16px 22px;gap:12px;align-items:flex-end;border-top:1px solid var(--hair);background:var(--permukaan)}
+html[data-ui="japandi"] .ruang-obrol .komposer textarea{border:1px solid var(--hair);border-radius:24px;padding:12px 20px;background:var(--bg)}
+html[data-ui="japandi"] .ruang-obrol .komposer textarea:focus,
+html[data-ui="japandi"] .ruang-obrol .komposer textarea:focus-visible{outline:0;border-color:var(--lumut);box-shadow:0 0 0 3px color-mix(in srgb,var(--lumut) 22%,transparent)}
+html[data-ui="japandi"] .ruang-obrol .komposer .btn{width:48px;min-height:48px;height:48px;padding:0;border-radius:50%}
+html[data-ui="japandi"] .ruang-obrol .balas-bar{background:var(--kilau);border-top:1px solid var(--hair);border-left:3px solid var(--lumut)}
+html[data-ui="japandi"] .ruang-obrol .bar-pilih{background:var(--kilau);border-top:1px solid var(--hair)}
+
+html[data-ui="japandi"] .ruang-obrol .tombol-balas{border-radius:50%;border-color:transparent;background:var(--kilau)}
+html[data-ui="japandi"] .ruang-obrol .tombol-balas:hover,
+html[data-ui="japandi"] .ruang-obrol .tombol-balas:focus-visible{background:var(--lumut);color:var(--permukaan);border-color:transparent}
+html[data-ui="japandi"] .ruang-obrol .tanda-kotak{border-radius:50%;border-color:var(--lumut)}
+html[data-ui="japandi"] .ruang-obrol .baris-pesan.terpilih .tanda-kotak{background:var(--lumut);color:var(--permukaan)}
+html[data-ui="japandi"] .ruang-obrol .baris-pesan.terpilih:not(.sendiri) .gelembung{
+  background:color-mix(in srgb,var(--lumut) 14%,var(--permukaan));box-shadow:inset 0 0 0 2px var(--lumut);
+}
+html[data-ui="japandi"] .ruang-obrol .baris-pesan.terpilih.sendiri .gelembung{box-shadow:inset 0 0 0 2px var(--lumut)}
+
+html[data-ui="japandi"] .ruang-obrol .chip-turun button,
+html[data-ui="japandi"] .ruang-obrol .chip-umpan{border:0;border-radius:999px;background:var(--ink);color:var(--permukaan);box-shadow:var(--bayang)}
+html[data-ui="japandi"] .ruang-obrol .kosong{border:0;border-radius:var(--r-besar);background:color-mix(in srgb,var(--kilau) 55%,transparent);font-weight:300;padding:48px 24px}
+html[data-ui="japandi"] .ruang-obrol .kosong-hias{color:var(--ink)}
+html[data-ui="japandi"] .ruang-obrol .gagal{border:0;border-radius:var(--r);background:var(--kilau)}
+
+html[data-ui="japandi"] .obrol-tamu{border:0;border-radius:var(--r-besar);background:var(--permukaan);box-shadow:var(--bayang);padding:14px 24px}
+html[data-ui="japandi"] .obrol-tamu .ganti{min-height:38px;padding:0 18px;border-bottom:0;border-radius:999px;background:var(--kilau)}
+html[data-ui="japandi"] .obrol-tamu .ganti:hover{background:var(--hair)}
+html[data-ui="japandi"] .obrol-pintu{border:0;border-radius:var(--r-besar);background:var(--permukaan);box-shadow:var(--bayang)}
+
+/* Gerak: naik pelan, sabar. */
+html[data-ui="japandi"] .ruang-obrol .baris-pesan.baru{animation:obrol-japandi-masuk .8s var(--ease) both}
+@keyframes obrol-japandi-masuk{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+
+
+/* ============================================================
+   4. HANAMI — kelopak, sakura, kaca bening, melayang
+   ============================================================ */
+html[data-ui="hanami"] .ruang-obrol{
+  --o-bg-lain:var(--permukaan);
+  --o-bg-sendiri:color-mix(in srgb,var(--sakura) 24%,var(--permukaan));
+  --o-fg-sendiri:var(--ink);
+  --o-jam-sendiri:var(--muted);
+  --o-aksen:var(--sakura-tua);
+  --av:32px;--av-gap:10px;
+  --kelopak:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21C6 16 3 10 6 4c2 1.5 4 1 6-1 2 2 4 2.500 6 1 3 6 0 12-6 17z'/%3E%3C/svg%3E");
+  border:1px solid var(--hair);border-radius:var(--r-besar);overflow:hidden;
+  background:color-mix(in srgb,var(--permukaan) 84%,transparent);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  box-shadow:0 26px 54px -38px color-mix(in srgb,var(--sakura-tua) 60%,transparent);
+}
+html[data-ui="hanami"][data-chat-size="sedang"] .ruang-obrol{--av:29px}
+html[data-ui="hanami"][data-chat-size="kecil"] .ruang-obrol{--av:25px}
+
+html[data-ui="hanami"] .ruang-obrol .ruang-kepala{
+  padding:20px 28px;border-bottom:1px solid var(--hair);
+  background:linear-gradient(100deg,color-mix(in srgb,var(--sakura) 20%,transparent),transparent 64%);
+}
+html[data-ui="hanami"] .ruang-obrol .ruang-kepala .judul h2{font-family:var(--font-judul);font-size:1.25rem;font-weight:500;letter-spacing:.08em}
+html[data-ui="hanami"] .ruang-obrol .ruang-kepala .judul p{font-weight:300;letter-spacing:.04em}
+html[data-ui="hanami"] .ruang-obrol .obrol-lencana{width:40px;height:40px;color:var(--sakura-tua)}
+
+html[data-ui="hanami"] .ruang-obrol .daring{border-color:var(--hair);border-radius:12px 3px 12px 3px;background:color-mix(in srgb,var(--permukaan) 70%,transparent)}
+html[data-ui="hanami"] .ruang-obrol .daring .titik{width:8px;height:8px;border-radius:50% 0 50% 0;background:var(--sakura)}
+html[data-ui="hanami"] .ruang-obrol .daring.nyala .titik{background:var(--wakaba)}
+
+html[data-ui="hanami"] .ruang-obrol .daftar-chat{
+  background-image:
+    radial-gradient(440px 230px at 100% 0,color-mix(in srgb,var(--sakura) 14%,transparent),transparent 70%),
+    radial-gradient(400px 210px at 0 100%,color-mix(in srgb,var(--wakaba) 10%,transparent),transparent 70%);
+}
+
+html[data-ui="hanami"] .ruang-obrol .gelembung{
+  border:1px solid var(--hair);border-radius:20px 5px 20px 5px;
+  box-shadow:0 12px 26px -22px color-mix(in srgb,var(--sakura-tua) 75%,transparent);
+  padding-left:calc(var(--chat-pad-x,14px) + 3px);padding-right:calc(var(--chat-pad-x,14px) + 3px);
+}
+html[data-ui="hanami"] .ruang-obrol .sendiri .gelembung{
+  border-color:color-mix(in srgb,var(--sakura) 55%,transparent);border-radius:5px 20px 5px 20px;
+}
+html[data-ui="hanami"] .ruang-obrol .kepala-pesan .nama{
+  font-family:var(--font-judul);font-weight:500;letter-spacing:.06em;
+  color:color-mix(in srgb,var(--sakura-tua) 60%,var(--ink));
+}
+html[data-ui="hanami"] .ruang-obrol .balas-konteks{
+  border-left:2px solid var(--sakura);border-radius:2px 10px 10px 2px;background:color-mix(in srgb,var(--sakura) 12%,transparent);
+  padding-left:10px;opacity:1;color:var(--muted);
+}
+html[data-ui="hanami"] .ruang-obrol .sendiri .balas-konteks{color:var(--muted);opacity:1}
+
+html[data-ui="hanami"] .ruang-obrol .avatar-pesan{
+  --c:var(--sakura);
+  border-radius:50% 6px 50% 6px;font-family:var(--font-judul);font-weight:500;
+  background:color-mix(in srgb,var(--c) 30%,var(--permukaan));
+  color:color-mix(in srgb,var(--c) 38%,var(--ink));
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 45%,transparent);
+}
+html[data-ui="hanami"] .ruang-obrol .avatar-pesan[data-w="1"]{--c:var(--sakura-tua)}
+html[data-ui="hanami"] .ruang-obrol .avatar-pesan[data-w="2"]{--c:var(--wakaba)}
+html[data-ui="hanami"] .ruang-obrol .avatar-pesan[data-w="3"]{--c:#B7A3CF}
+html[data-ui="hanami"] .ruang-obrol .avatar-pesan[data-w="4"]{--c:#E3B27F}
+
+/* Pemisah: garis memudar + kelopak kecil di depan label. */
+html[data-ui="hanami"] .ruang-obrol .pemisah{letter-spacing:.08em;text-transform:none;font-size:.76rem}
+html[data-ui="hanami"] .ruang-obrol .pemisah::before{background:linear-gradient(90deg,transparent,var(--hair))}
+html[data-ui="hanami"] .ruang-obrol .pemisah::after{background:linear-gradient(90deg,var(--hair),transparent)}
+html[data-ui="hanami"] .ruang-obrol .pemisah span::before{
+  content:"";display:inline-block;width:12px;height:12px;margin-right:9px;vertical-align:-1px;background:var(--sakura);
+  -webkit-mask:var(--kelopak) center/contain no-repeat;mask:var(--kelopak) center/contain no-repeat;
+}
+
+html[data-ui="hanami"] .ruang-obrol .bar-menulis .ketik{gap:5px}
+html[data-ui="hanami"] .ruang-obrol .bar-menulis .ketik i{width:7px;height:7px;border-radius:50% 0 50% 0;background:var(--sakura);animation:obrol-kelopak 1.6s ease-in-out infinite}
+html[data-ui="hanami"] .ruang-obrol .bar-menulis .ketik i:nth-child(2){animation-delay:.2s}
+html[data-ui="hanami"] .ruang-obrol .bar-menulis .ketik i:nth-child(3){animation-delay:.4s}
+@keyframes obrol-kelopak{0%,100%{transform:translateY(0) rotate(0);opacity:.45}50%{transform:translateY(-4px) rotate(45deg);opacity:1}}
+
+html[data-ui="hanami"] .ruang-obrol .komposer{padding:16px 22px;gap:12px;align-items:flex-end;border-top:1px solid var(--hair);background:color-mix(in srgb,var(--permukaan) 65%,transparent)}
+html[data-ui="hanami"] .ruang-obrol .komposer textarea{border:1px solid var(--hair);border-radius:20px 4px 20px 4px;padding:12px 20px;background:var(--permukaan)}
+html[data-ui="hanami"] .ruang-obrol .komposer textarea:focus,
+html[data-ui="hanami"] .ruang-obrol .komposer textarea:focus-visible{outline:0;border-color:var(--sakura);box-shadow:0 0 0 3px color-mix(in srgb,var(--sakura) 26%,transparent)}
+html[data-ui="hanami"] .ruang-obrol .komposer .btn{width:48px;min-height:48px;height:48px;padding:0}
+html[data-ui="hanami"] .ruang-obrol .balas-bar{background:color-mix(in srgb,var(--sakura) 10%,transparent);border-top:1px solid var(--hair);border-left:3px solid var(--sakura)}
+html[data-ui="hanami"] .ruang-obrol .bar-pilih{background:color-mix(in srgb,var(--sakura) 10%,transparent);border-top:1px solid var(--hair)}
+
+html[data-ui="hanami"] .ruang-obrol .tombol-balas{border-radius:12px 3px 12px 3px;border-color:var(--hair);background:var(--permukaan)}
+html[data-ui="hanami"] .ruang-obrol .tombol-balas:hover,
+html[data-ui="hanami"] .ruang-obrol .tombol-balas:focus-visible{border-color:var(--sakura);background:color-mix(in srgb,var(--sakura) 20%,var(--permukaan));color:var(--ink)}
+html[data-ui="hanami"] .ruang-obrol .tanda-kotak{border-radius:8px 2px 8px 2px;border-color:var(--sakura-tua)}
+html[data-ui="hanami"] .ruang-obrol .baris-pesan.terpilih .tanda-kotak{background:var(--sakura-tua);color:var(--permukaan);border-color:var(--sakura-tua)}
+html[data-ui="hanami"] .ruang-obrol .baris-pesan.terpilih:not(.sendiri) .gelembung{
+  background:color-mix(in srgb,var(--sakura) 16%,var(--permukaan));box-shadow:inset 0 0 0 2px var(--sakura-tua);
+}
+html[data-ui="hanami"] .ruang-obrol .baris-pesan.terpilih.sendiri .gelembung{box-shadow:inset 0 0 0 2px var(--sakura-tua)}
+
+html[data-ui="hanami"] .ruang-obrol .chip-turun button,
+html[data-ui="hanami"] .ruang-obrol .chip-umpan{
+  border:0;border-radius:16px 3px 16px 3px;background:var(--ink);color:var(--bg);
+  box-shadow:0 12px 26px -14px color-mix(in srgb,var(--sakura-tua) 80%,transparent);
+}
+html[data-ui="hanami"] .ruang-obrol .kosong{border:1px dashed color-mix(in srgb,var(--sakura) 65%,transparent);border-radius:var(--r-besar);background:transparent;font-weight:300;padding:48px 24px}
+html[data-ui="hanami"] .ruang-obrol .kosong-hias{color:var(--sakura-tua)}
+html[data-ui="hanami"] .ruang-obrol .gagal{border:1px solid var(--hair);border-radius:var(--r)}
+
+html[data-ui="hanami"] .obrol-tamu{border:1px solid var(--hair);border-radius:var(--r);background:color-mix(in srgb,var(--permukaan) 82%,transparent);padding:14px 24px}
+html[data-ui="hanami"] .obrol-tamu .ganti{border-bottom:1px solid var(--sakura);padding:0 6px}
+html[data-ui="hanami"] .obrol-pintu{border:1px solid var(--hair);border-radius:var(--r-besar);background:color-mix(in srgb,var(--permukaan) 84%,transparent)}
+
+/* Gerak: melayang turun, miring dikit kayak kelopak. */
+html[data-ui="hanami"] .ruang-obrol .baris-pesan.baru{animation:obrol-hanami-masuk .7s var(--ease) both}
+html[data-ui="hanami"] .ruang-obrol .baris-pesan.sendiri.baru{animation-name:obrol-hanami-masuk-kanan}
+@keyframes obrol-hanami-masuk{from{opacity:0;transform:translateY(12px) rotate(-1.4deg)}to{opacity:1;transform:none}}
+@keyframes obrol-hanami-masuk-kanan{from{opacity:0;transform:translateY(12px) rotate(1.4deg)}to{opacity:1;transform:none}}
+
+
+/* ============================================================
+   5. HP + gerak dikurangi
+   ============================================================ */
+@media(max-width:560px){
+  html[data-ui] .ruang-obrol,
+  html[data-ui][data-chat-size] .ruang-obrol{--av:25px;--av-gap:7px}
+  html[data-ui][data-chat-size="kecil"] .ruang-obrol{--av:21px;--av-gap:6px}
+  html[data-ui="japandi"] .ruang-obrol .ruang-kepala,
+  html[data-ui="hanami"] .ruang-obrol .ruang-kepala{padding:16px 18px}
+  html[data-ui="japandi"] .ruang-obrol .komposer,
+  html[data-ui="hanami"] .ruang-obrol .komposer{padding:12px 14px}
+  html[data-ui="japandi"] .ruang-obrol .komposer .btn,
+  html[data-ui="hanami"] .ruang-obrol .komposer .btn{width:44px;min-height:44px;height:44px}
+  html[data-ui="japandi"] .ruang-obrol .obrol-lencana,
+  html[data-ui="hanami"] .ruang-obrol .obrol-lencana{width:34px;height:34px}
+  html[data-ui="klasik"] .ruang-obrol{box-shadow:4px 4px 0 color-mix(in srgb,var(--ink) 9%,transparent)}
+}
+@media(prefers-reduced-motion:reduce){
+  .ruang-obrol *,.ruang-obrol *::before,.ruang-obrol *::after{animation:none!important}
+}

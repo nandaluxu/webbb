@@ -1,0 +1,658 @@
+/* ============================================================
+   Akinator per gaya UI — layout ikut berubah, bukan cuma warna.
+
+   Kenapa file sendiri: blok .aki-* di globals.css ditulis dengan
+   bahasa Klasik (kotak tebal 3px, gelembung tinta solid, tombol
+   bertumpuk + bayangan keras) dan token monokrom murni lokal
+   (--a-*). Halaman ini juga nyalain body[data-latar="polos"],
+   yang MAKSA token warna jadi hitam-putih murni — makanya dulu
+   Akinator gak ngikutin tema lain sama sekali.
+
+   Di sini, per gaya (markup React-nya SAMA, cuma CSS yang beda):
+
+   - Klasik   : gak disentuh (tetep dari globals.css).
+   - Swiss Zen: lembar editorial. Tanpa kotak: cuma hairline. Kolom
+                genie sempit (4/12) + kolom konten lebar (8/12),
+                nomor pertanyaan jadi angka raksasa tipis, pertanyaan
+                = tipografi besar (bukan gelembung), jawaban = daftar
+                baris berpenggaris yang meng-invert pas di-hover.
+   - Japandi  : dua kartu lembut terpisah (niche genie berbentuk
+                lengkung + kartu konten), lapisan tonal, pertanyaan =
+                kartu catatan mincho, jawaban = pil yang mengalir.
+   - Hanami   : genie dalam bingkai kelopak yang MENIMPA tepi kartu
+                kaca, pertanyaan = gelembung sakura berekor kelopak,
+                jawaban = baris kelopak (Iya/Tidak besar di atas, tiga
+                sisanya satu baris di bawah).
+
+   Dimuat PALING AKHIR (setelah permainan.css, lihat layout.tsx).
+   SELURUH rule di-scope html[data-ui="..."]. Terang/gelap ikut
+   token tiap tema (var(--bg), --ink, dst), jadi gak ada blok
+   gelap terpisah kecuali yang butuh warna khusus.
+   ============================================================ */
+
+
+/* ============================================================
+   0. BERSAMA — lepasin token "polos" & hidupin lagi latar tema
+   body[data-latar="polos"] (globals.css) nimpa --bg/--ink/... jadi
+   monokrom murni. Di tiga gaya ini token dikembaliin ke nilai
+   <html> (inherit) supaya warna tema yang main, dan kanvas latar
+   (kisi Swiss / kabut Japandi / kelopak Hanami) nyala lagi.
+   ============================================================ */
+html[data-ui="swiss"][data-tema] body[data-latar="polos"],
+html[data-ui="japandi"][data-tema] body[data-latar="polos"],
+html[data-ui="hanami"][data-tema] body[data-latar="polos"]{
+  --bg:inherit;--ink:inherit;--muted:inherit;--hair:inherit;--kilau:inherit;--tanda:inherit;
+  background:var(--bg);
+}
+html[data-ui="swiss"] body[data-latar="polos"] #bg-canvas,
+html[data-ui="japandi"] body[data-latar="polos"] #bg-canvas,
+html[data-ui="hanami"] body[data-latar="polos"] #bg-canvas{display:block}
+
+/* Token lokal --a-* diarahin ke token tema (bukan hitam-putih murni). */
+html[data-ui="swiss"] .aki-papan,
+html[data-ui="japandi"] .aki-papan,
+html[data-ui="hanami"] .aki-papan{
+  --a-bg:var(--bg);--a-ink:var(--ink);--a-muted:var(--muted);--a-hair:var(--hair);
+}
+html[data-ui="japandi"] .aki-papan,
+html[data-ui="hanami"] .aki-papan{--a-bg:var(--permukaan)}
+
+
+/* ============================================================
+   1. SWISS ZEN — lembar editorial, hairline, presisi
+   ============================================================ */
+html[data-ui="swiss"] .aki-papan{
+  --aki-gap:clamp(24px,4vw,64px);
+  margin-top:clamp(40px,6vw,72px);
+  border:0;border-top:1px solid var(--ink);border-bottom:1px solid var(--hair);
+  background:transparent;
+}
+
+/* Kepala halaman: judul sejajar kolom genie, lede sejajar kolom konten. */
+html[data-ui="swiss"] .aki-head{
+  display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);
+  column-gap:var(--aki-gap,clamp(24px,4vw,64px));align-items:end;
+}
+html[data-ui="swiss"] .aki-head h1{grid-column:1;font-size:clamp(2.4rem,6vw,4.5rem)}
+html[data-ui="swiss"] .aki-head .lede{grid-column:2;margin-top:0;padding-bottom:.7em;max-width:46ch}
+
+/* Grid 4/12 + 8/12: genie sempit, konten lega. */
+html[data-ui="swiss"] .aki-grid{grid-template-columns:minmax(0,4fr) minmax(0,8fr);min-height:540px}
+html[data-ui="swiss"] .aki-genie{
+  padding:28px 28px 18px 0;border-right:1px solid var(--hair);background:transparent;
+}
+html[data-ui="swiss"] .aki-wadah img{animation-duration:.9s}
+html[data-ui="swiss"] .aki-kaki{
+  margin-top:16px;padding-top:14px;min-height:40px;
+  border-top:1px solid var(--hair);font-size:.68rem;font-weight:500;letter-spacing:.14em;
+}
+html[data-ui="swiss"] .aki-kaki b{font-weight:500;color:var(--ink)}
+html[data-ui="swiss"] .aki-sisi{
+  width:32px;height:32px;border:1px solid var(--hair);background:transparent;color:var(--ink);
+}
+html[data-ui="swiss"] .aki-sisi:hover,
+html[data-ui="swiss"] .aki-sisi:focus-visible{
+  transform:none;box-shadow:none;background:var(--ink);color:var(--bg);border-color:var(--ink);
+}
+html[data-ui="swiss"] .aki-sisi svg{width:15px;height:15px;stroke-width:1.8}
+html[data-ui="swiss"] .aki-badan{padding:36px 0 28px var(--aki-gap)}
+
+/* Sisi kanan (desktop): kolom & garis dibalik, rasio tetep 4/8. */
+@media(min-width:821px){
+  html[data-ui="swiss"] .aki-papan[data-sisi="kanan"] .aki-grid{grid-template-columns:minmax(0,8fr) minmax(0,4fr)}
+  html[data-ui="swiss"] .aki-papan[data-sisi="kanan"] .aki-genie{
+    border-right:0;border-left:1px solid var(--hair);padding:28px 0 18px 28px;
+  }
+  html[data-ui="swiss"] .aki-papan[data-sisi="kanan"] .aki-badan{padding:36px var(--aki-gap) 28px 0}
+}
+
+/* Pertanyaan: bukan gelembung. Angka raksasa tipis di kiri, kalimat
+   pertanyaan tipografi besar di kanannya. */
+html[data-ui="swiss"] .aki-bola{
+  display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:clamp(18px,3vw,40px);align-items:end;
+  width:100%;margin:0;padding:0;background:transparent;color:var(--ink);
+}
+html[data-ui="swiss"] .aki-bola::before{display:none}
+html[data-ui="swiss"] .aki-papan[data-sisi] .aki-bola{margin:0}
+html[data-ui="swiss"] .aki-bola .aki-no{
+  grid-column:1;display:flex;flex-direction:column;gap:12px;color:var(--muted);opacity:1;
+}
+html[data-ui="swiss"] .aki-no-kata{
+  font-size:.68rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;
+}
+html[data-ui="swiss"] .aki-no-n{
+  font-size:clamp(3.4rem,7.5vw,6rem);font-weight:200;letter-spacing:-.06em;line-height:.85;
+  color:var(--ink);font-variant-numeric:tabular-nums;
+}
+html[data-ui="swiss"] .aki-no-tanda{display:none}
+html[data-ui="swiss"] .aki-bola .aki-teks{
+  grid-column:2;margin-top:0;font-size:clamp(1.5rem,2.9vw,2.4rem);font-weight:300;
+  letter-spacing:-.03em;line-height:1.22;
+}
+
+html[data-ui="swiss"] .aki-maju{margin-top:40px;padding:0;gap:16px}
+html[data-ui="swiss"] .aki-maju-label,
+html[data-ui="swiss"] .aki-maju-angka{font-size:.68rem;font-weight:500;letter-spacing:.14em;color:var(--muted)}
+/* Trek 1px + isi 3px: garis tipis yang "terisi". */
+html[data-ui="swiss"] .aki-batang{
+  height:3px;border:0;background:linear-gradient(var(--hair),var(--hair)) center/100% 1px no-repeat;overflow:visible;
+}
+html[data-ui="swiss"] .aki-batang span{height:3px;background:var(--ink)}
+
+/* Jawaban: daftar baris berpenggaris, bukan tumpukan tombol kotak. */
+html[data-ui="swiss"] .aki-jawab{
+  display:flex;flex-direction:column;gap:0;margin-top:36px;border-top:1px solid var(--ink);
+}
+html[data-ui="swiss"] .aki-tombol{
+  justify-content:flex-start;gap:clamp(14px,2vw,28px);min-height:60px;padding:0 4px;
+  font-size:1.08rem;font-weight:300;letter-spacing:-.01em;color:var(--ink);
+  background:transparent;border:0;border-bottom:1px solid var(--hair);
+  transition:background .35s var(--ease),color .35s var(--ease),padding .35s var(--ease);
+}
+html[data-ui="swiss"] .aki-tombol .ki{
+  position:static;min-width:2ch;font-size:.7rem;font-weight:500;letter-spacing:.1em;color:var(--muted);
+}
+html[data-ui="swiss"] .aki-tombol::after{
+  content:"\2192";margin-left:auto;opacity:0;transform:translateX(-10px);
+  transition:opacity .35s var(--ease),transform .35s var(--ease);
+}
+html[data-ui="swiss"] .aki-tombol:hover:not(:disabled),
+html[data-ui="swiss"] .aki-tombol:focus-visible:not(:disabled){
+  transform:none;box-shadow:none;background:var(--ink);color:var(--bg);padding:0 16px;
+}
+html[data-ui="swiss"] .aki-tombol:hover:not(:disabled) .ki,
+html[data-ui="swiss"] .aki-tombol:focus-visible:not(:disabled) .ki{color:inherit;opacity:.65}
+html[data-ui="swiss"] .aki-tombol:hover:not(:disabled)::after,
+html[data-ui="swiss"] .aki-tombol:focus-visible:not(:disabled)::after{opacity:1;transform:none}
+html[data-ui="swiss"] .aki-tombol:focus-visible{outline-offset:-2px}
+
+html[data-ui="swiss"] .aki-kontrol{margin-top:26px;padding-top:0;border-top:0;gap:24px}
+html[data-ui="swiss"] .aki-kontrol .tautan-kecil{border-bottom:1px solid var(--ink);min-height:36px}
+html[data-ui="swiss"] .aki-catatan{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;font-weight:500}
+
+/* Pembuka (label kecil + judul intro): penggaris pendek, bukan lencana. */
+html[data-ui="swiss"] .aki-buka{
+  display:flex;align-items:center;gap:12px;width:auto;margin-bottom:14px;padding:0;
+  background:transparent;color:var(--muted);
+  font-size:.68rem;font-weight:500;letter-spacing:.14em;
+}
+html[data-ui="swiss"] .aki-buka::before{
+  position:static;display:block;flex:none;width:28px;height:1px;margin:0;background:var(--ink);
+}
+html[data-ui="swiss"] .aki-buka.h2{
+  display:block;margin-bottom:0;padding:0;color:var(--ink);text-transform:none;
+  font-size:clamp(1.8rem,3.6vw,3rem);font-weight:300;letter-spacing:-.03em;line-height:1.15;
+}
+html[data-ui="swiss"] .aki-buka.h2::before{display:none}
+
+/* Intro: cara main = daftar bernomor berpenggaris. */
+html[data-ui="swiss"] .aki-intro p{font-weight:300;max-width:52ch}
+html[data-ui="swiss"] .aki-cara{counter-reset:aki;margin:30px 0 36px;border-top:1px solid var(--ink)}
+html[data-ui="swiss"] .aki-cara li{
+  counter-increment:aki;display:grid;grid-template-columns:3.2ch minmax(0,1fr);
+  padding:14px 0;border-bottom:1px solid var(--hair);font-weight:300;
+}
+html[data-ui="swiss"] .aki-cara li + li{border-top:0}
+html[data-ui="swiss"] .aki-cara li::before{
+  content:"0" counter(aki);padding-top:.3em;font-size:.68rem;font-weight:500;letter-spacing:.1em;color:var(--muted);
+}
+html[data-ui="swiss"] .aki-intro .btn{width:100%;min-height:56px;justify-content:space-between;padding:0 20px}
+
+/* Tebakan / hasil: foto abu-abu (monokrom) di kolom sempit + nama besar. */
+html[data-ui="swiss"] .aksi-tebakan{
+  display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--aki-gap);
+  margin-top:18px;padding:24px 0 0;border-top:1px solid var(--hair);align-items:start;
+}
+html[data-ui="swiss"] .aki-foto{
+  width:clamp(120px,16vw,176px);height:clamp(150px,20vw,220px);border:0;
+  filter:grayscale(1) contrast(1.05);transition:filter .6s var(--ease);
+}
+html[data-ui="swiss"] .aki-foto:hover{filter:none}
+html[data-ui="swiss"] .aki-nama{margin-top:0;font-size:clamp(1.7rem,3.2vw,2.6rem);font-weight:300;letter-spacing:-.035em}
+html[data-ui="swiss"] .aki-nama.besar{margin-top:6px;font-size:clamp(2.6rem,7vw,5.2rem);font-weight:200;letter-spacing:-.055em;line-height:1}
+html[data-ui="swiss"] .aki-desk{font-weight:300;max-width:50ch}
+html[data-ui="swiss"] .aki-jawab.tebakan{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:30px;border-top:0;
+}
+html[data-ui="swiss"] .aki-jawab.tebakan .btn{min-height:56px;justify-content:space-between;padding:0 20px}
+
+/* Daftar "nyerah": baris berpenggaris, hover invert (sama kayak jawaban). */
+html[data-ui="swiss"] .aki-opsi{gap:0;margin-top:22px;border-top:1px solid var(--ink)}
+html[data-ui="swiss"] .aki-opsi-btn{
+  min-height:64px;padding:14px 4px;border:0;border-bottom:1px solid var(--hair);background:transparent;
+  transition:background .35s var(--ease),color .35s var(--ease),padding .35s var(--ease);
+}
+html[data-ui="swiss"] .aki-opsi-btn b{font-weight:400}
+html[data-ui="swiss"] .aki-opsi-btn:hover:not(:disabled),
+html[data-ui="swiss"] .aki-opsi-btn:focus-visible:not(:disabled){
+  transform:none;box-shadow:none;background:var(--ink);color:var(--bg);padding:14px 16px;
+}
+html[data-ui="swiss"] .aki-opsi-btn:hover:not(:disabled) span,
+html[data-ui="swiss"] .aki-opsi-btn:focus-visible:not(:disabled) span{color:inherit;opacity:.7}
+html[data-ui="swiss"] .aki-opsi-btn:focus-visible{outline-offset:-2px}
+
+html[data-ui="swiss"] .aki-galat{
+  margin-top:24px;padding:2px 0 2px 16px;border:0;border-left:2px solid var(--ink);font-weight:400;
+}
+
+
+/* ============================================================
+   2. JAPANDI — dua kartu lembut, niche lengkung, pil mengalir
+   ============================================================ */
+html[data-ui="japandi"] .aki-papan{
+  margin-top:clamp(36px,5vw,64px);border:0;background:transparent;
+}
+
+html[data-ui="japandi"] .aki-head{text-align:center}
+html[data-ui="japandi"] .aki-head .lede{margin-left:auto;margin-right:auto;max-width:44ch}
+
+/* Dua kartu terpisah (bukan satu kotak terbelah). */
+html[data-ui="japandi"] .aki-grid{
+  grid-template-columns:minmax(0,2fr) minmax(0,3fr);gap:clamp(16px,2.4vw,32px);min-height:560px;
+}
+html[data-ui="japandi"] .aki-genie{
+  padding:clamp(20px,2.4vw,28px) clamp(18px,2.2vw,26px) 16px;
+  background:var(--kilau);border:0;border-radius:var(--r-besar);box-shadow:var(--bayang);
+}
+/* Niche: jendela lengkung ala tokonoma + matahari kayu di belakang genie. */
+html[data-ui="japandi"] .aki-wadah{
+  border-radius:999px 999px 18px 18px;background:var(--permukaan);overflow:hidden;
+  box-shadow:inset 0 0 0 1px var(--hair);
+}
+html[data-ui="japandi"] .aki-wadah::before{
+  content:"";position:absolute;left:50%;top:20%;width:52%;aspect-ratio:1;transform:translateX(-50%);
+  border-radius:50%;background:color-mix(in srgb,var(--kayu) 24%,transparent);
+}
+html[data-ui="japandi"] .aki-wadah img{
+  inset:auto 6% 0 6%;width:88%;height:90%;
+}
+html[data-ui="japandi"] .aki-kaki{
+  margin-top:14px;padding-top:0;border-top:0;
+  font-family:var(--font-judul);font-size:.82rem;font-weight:400;letter-spacing:.06em;text-transform:none;
+}
+html[data-ui="japandi"] .aki-kaki b{font-weight:500}
+html[data-ui="japandi"] .aki-sisi{
+  width:36px;height:36px;border:0;border-radius:50%;background:var(--permukaan);color:var(--ink);
+  box-shadow:inset 0 0 0 1px var(--hair);
+}
+html[data-ui="japandi"] .aki-sisi:hover,
+html[data-ui="japandi"] .aki-sisi:focus-visible{
+  transform:none;background:var(--lumut);color:var(--permukaan);box-shadow:none;
+}
+
+/* Kartu konten: permukaan terang, isi dipusatkan vertikal. */
+html[data-ui="japandi"] .aki-badan{
+  display:flex;flex-direction:column;justify-content:center;
+  padding:clamp(26px,4vw,48px);background:var(--permukaan);
+  border-radius:var(--r-besar);box-shadow:var(--bayang);
+}
+
+@media(min-width:821px){
+  html[data-ui="japandi"] .aki-papan[data-sisi="kanan"] .aki-grid{grid-template-columns:minmax(0,3fr) minmax(0,2fr)}
+  html[data-ui="japandi"] .aki-papan[data-sisi="kanan"] .aki-genie{border:0}
+}
+
+/* Pertanyaan: kartu catatan tonal (lapisan di atas lapisan), tanpa ekor. */
+html[data-ui="japandi"] .aki-bola{
+  width:100%;margin:0;padding:22px 28px 26px;background:var(--kilau);color:var(--ink);border-radius:var(--r);
+}
+html[data-ui="japandi"] .aki-bola::before{display:none}
+html[data-ui="japandi"] .aki-papan[data-sisi] .aki-bola{margin:0}
+html[data-ui="japandi"] .aki-bola .aki-no{
+  display:flex;align-items:center;gap:10px;color:var(--muted);opacity:1;
+  font-size:.7rem;font-weight:500;letter-spacing:.14em;
+}
+html[data-ui="japandi"] .aki-bola .aki-no::before{
+  content:"";flex:none;width:7px;height:7px;border-radius:50%;background:var(--lumut);
+}
+html[data-ui="japandi"] .aki-bola .aki-teks{
+  margin-top:12px;font-family:var(--font-judul);font-size:clamp(1.25rem,2.1vw,1.75rem);
+  font-weight:400;letter-spacing:.01em;line-height:1.6;
+}
+
+html[data-ui="japandi"] .aki-maju{margin-top:26px;padding:0 4px}
+html[data-ui="japandi"] .aki-maju-label,
+html[data-ui="japandi"] .aki-maju-angka{font-size:.7rem;letter-spacing:.08em;font-weight:500;color:var(--muted)}
+html[data-ui="japandi"] .aki-batang{height:6px;border:0;border-radius:999px;background:var(--kilau)}
+html[data-ui="japandi"] .aki-batang span{border-radius:inherit;background:var(--lumut)}
+
+/* Jawaban: pil yang mengalir (wrap), nomor = bulatan kecil di kiri. */
+html[data-ui="japandi"] .aki-jawab{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+html[data-ui="japandi"] .aki-tombol{
+  flex:1 1 auto;min-height:48px;padding:0 24px 0 46px;
+  font-size:.95rem;font-weight:400;color:var(--ink);background:var(--kilau);
+  border:0;border-radius:999px;
+  transition:background .35s var(--ease),color .35s var(--ease),transform .35s var(--ease);
+}
+html[data-ui="japandi"] .aki-tombol[data-j="0"]{background:color-mix(in srgb,var(--lumut) 22%,var(--kilau))}
+html[data-ui="japandi"] .aki-tombol .ki{
+  top:50%;left:12px;width:22px;height:22px;display:grid;place-items:center;transform:translateY(-50%);
+  border-radius:50%;background:var(--permukaan);color:var(--muted);font-size:.66rem;font-weight:500;
+}
+html[data-ui="japandi"] .aki-tombol:hover:not(:disabled),
+html[data-ui="japandi"] .aki-tombol:focus-visible:not(:disabled){
+  transform:translateY(-2px);box-shadow:none;background:var(--lumut);color:var(--permukaan);
+}
+
+html[data-ui="japandi"] .aki-kontrol{margin-top:22px;padding-top:0;border-top:0}
+html[data-ui="japandi"] .aki-kontrol .tautan-kecil{border-bottom:1px solid var(--hair);color:var(--muted)}
+html[data-ui="japandi"] .aki-kontrol .tautan-kecil:hover{border-bottom-color:var(--lumut)}
+html[data-ui="japandi"] .aki-catatan{font-size:.74rem;letter-spacing:.06em}
+
+/* Pembuka: pil kecil tonal; judul intro = mincho besar tanpa kotak. */
+html[data-ui="japandi"] .aki-buka{
+  width:fit-content;margin-bottom:10px;padding:7px 18px;border-radius:999px;
+  background:var(--kilau);color:var(--muted);font-size:.72rem;font-weight:500;letter-spacing:.08em;
+}
+html[data-ui="japandi"] .aki-buka::before{display:none}
+html[data-ui="japandi"] .aki-buka.h2{
+  padding:0;border-radius:0;background:transparent;color:var(--ink);text-transform:none;
+  font-family:var(--font-judul);font-size:clamp(1.5rem,2.6vw,2.1rem);font-weight:400;letter-spacing:.01em;line-height:1.4;
+}
+
+html[data-ui="japandi"] .aki-intro p{max-width:52ch}
+html[data-ui="japandi"] .aki-cara{margin:22px 0 28px}
+html[data-ui="japandi"] .aki-cara li{display:flex;gap:14px;padding:8px 0}
+html[data-ui="japandi"] .aki-cara li + li{border-top:0}
+html[data-ui="japandi"] .aki-cara li::before{
+  content:"";flex:none;width:6px;height:6px;margin-top:.72em;border-radius:50%;background:var(--lumut);
+}
+html[data-ui="japandi"] .aki-intro .btn{width:auto;min-width:220px}
+
+html[data-ui="japandi"] .aksi-tebakan{
+  align-items:center;gap:22px;margin-top:16px;padding:22px;background:var(--kilau);border-radius:var(--r);
+}
+html[data-ui="japandi"] .aki-foto{
+  width:128px;height:160px;border:0;border-radius:999px 999px 14px 14px;box-shadow:var(--bayang);
+}
+html[data-ui="japandi"] .aki-nama{font-weight:400;letter-spacing:.01em}
+html[data-ui="japandi"] .aki-nama.besar{font-size:clamp(1.9rem,3.8vw,2.7rem)}
+html[data-ui="japandi"] .aki-jawab.tebakan{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+html[data-ui="japandi"] .aki-jawab.tebakan .btn{min-height:50px;padding:0 26px}
+
+html[data-ui="japandi"] .aki-opsi{gap:10px;margin-top:20px}
+html[data-ui="japandi"] .aki-opsi-btn{
+  padding:14px 22px;border:0;border-radius:var(--r);background:var(--kilau);
+  transition:background .35s var(--ease),transform .35s var(--ease);
+}
+html[data-ui="japandi"] .aki-opsi-btn:hover:not(:disabled),
+html[data-ui="japandi"] .aki-opsi-btn:focus-visible:not(:disabled){
+  transform:translateY(-2px);box-shadow:none;background:color-mix(in srgb,var(--lumut) 24%,var(--kilau));
+}
+
+html[data-ui="japandi"] .aki-galat{
+  border:0;border-radius:var(--r);background:color-mix(in srgb,var(--kayu) 18%,var(--permukaan));
+}
+
+/* Menang: niche kayu bersinar pelan. */
+html[data-ui="japandi"] .aki-papan.menang .aki-wadah{
+  box-shadow:inset 0 0 0 1px var(--hair),0 0 0 6px color-mix(in srgb,var(--kayu) 28%,transparent);
+}
+
+
+/* ============================================================
+   3. HANAMI — bingkai kelopak menimpa kartu kaca
+   ============================================================ */
+html[data-ui="hanami"] .aki-papan{
+  --aki-tindih:72px;
+  margin-top:clamp(36px,5vw,64px);border:0;background:transparent;
+}
+
+html[data-ui="hanami"] .aki-head{text-align:center}
+html[data-ui="hanami"] .aki-head h1::after{
+  content:"";display:block;width:64px;height:2px;margin:20px auto 0;
+  background:linear-gradient(90deg,transparent,var(--sakura),transparent);
+}
+html[data-ui="hanami"] .aki-head .lede{margin-left:auto;margin-right:auto;max-width:42ch}
+
+/* Genie (kiri) numpang 72px ke dalam kartu; kartu nambah padding
+   kiri seukuran itu biar teks gak ketutup bingkai. */
+html[data-ui="hanami"] .aki-grid{
+  grid-template-columns:minmax(0,4fr) minmax(0,7fr);gap:0;min-height:580px;position:relative;
+}
+html[data-ui="hanami"] .aki-genie{
+  z-index:2;margin:28px calc(var(--aki-tindih) * -1) 28px 0;padding:0;border:0;background:transparent;
+}
+html[data-ui="hanami"] .aki-wadah{
+  border-radius:50% 6% 50% 6% / 34% 6% 34% 6%;
+  background:linear-gradient(165deg,
+    color-mix(in srgb,var(--sakura) 34%,var(--permukaan)),
+    color-mix(in srgb,var(--sakura) 8%,var(--permukaan)));
+  box-shadow:0 26px 44px -30px color-mix(in srgb,var(--sakura-tua) 75%,transparent),
+             inset 0 0 0 1px color-mix(in srgb,var(--sakura) 40%,transparent);
+  transition:box-shadow .6s var(--ease);
+}
+html[data-ui="hanami"] .aki-wadah img{inset:auto 6% 0 6%;width:88%;height:92%}
+html[data-ui="hanami"] .aki-kaki{
+  margin-top:16px;padding:0 calc(var(--aki-tindih) + 16px) 0 8px;border-top:0;min-height:40px;
+  font-family:var(--font-judul);font-size:.82rem;font-weight:500;letter-spacing:.08em;text-transform:none;
+}
+html[data-ui="hanami"] .aki-kaki b{font-weight:500}
+html[data-ui="hanami"] .aki-sisi{
+  width:36px;height:36px;border:1px solid var(--hair);border-radius:16px 3px 16px 3px;
+  background:var(--permukaan);color:var(--ink);
+}
+html[data-ui="hanami"] .aki-sisi:hover,
+html[data-ui="hanami"] .aki-sisi:focus-visible{
+  transform:none;box-shadow:none;border-color:var(--sakura);
+  background:color-mix(in srgb,var(--sakura) 22%,var(--permukaan));
+}
+
+/* Kartu kaca: setengah bening, sudut kelopak. */
+html[data-ui="hanami"] .aki-badan{
+  position:relative;z-index:1;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:clamp(28px,4vw,48px) clamp(24px,4vw,48px) clamp(28px,4vw,44px) calc(var(--aki-tindih) + clamp(24px,3.4vw,44px));
+  background:color-mix(in srgb,var(--permukaan) 88%,transparent);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  border:1px solid var(--hair);border-radius:var(--r-besar);
+  box-shadow:0 34px 60px -46px color-mix(in srgb,var(--sakura-tua) 60%,transparent);
+}
+
+@media(min-width:821px){
+  html[data-ui="hanami"] .aki-papan[data-sisi="kanan"] .aki-grid{grid-template-columns:minmax(0,7fr) minmax(0,4fr)}
+  html[data-ui="hanami"] .aki-papan[data-sisi="kanan"] .aki-genie{
+    order:2;border:0;margin:28px 0 28px calc(var(--aki-tindih) * -1);
+  }
+  html[data-ui="hanami"] .aki-papan[data-sisi="kanan"] .aki-kaki{padding:0 8px 0 calc(var(--aki-tindih) + 16px)}
+  html[data-ui="hanami"] .aki-papan[data-sisi="kanan"] .aki-badan{
+    order:1;
+    padding:clamp(28px,4vw,48px) calc(var(--aki-tindih) + clamp(24px,3.4vw,44px)) clamp(28px,4vw,44px) clamp(24px,4vw,48px);
+  }
+}
+
+/* Pertanyaan: gelembung sakura, ekor = sebelah kelopak. */
+html[data-ui="hanami"] .aki-bola{
+  width:100%;margin:0;padding:22px 28px 26px;color:var(--ink);
+  background:color-mix(in srgb,var(--sakura) 18%,var(--permukaan));
+  border-radius:var(--r);
+}
+html[data-ui="hanami"] .aki-bola::before{
+  top:30px;left:-9px;width:18px;height:18px;
+  background:color-mix(in srgb,var(--sakura) 18%,var(--permukaan));
+  border-radius:0 100% 0 100%;transform:rotate(-45deg);
+}
+html[data-ui="hanami"] .aki-papan[data-sisi] .aki-bola{margin:0}
+html[data-ui="hanami"] .aki-papan[data-sisi="kanan"] .aki-bola::before{left:auto;right:-9px;transform:rotate(135deg)}
+html[data-ui="hanami"] .aki-bola .aki-no{color:var(--muted);opacity:1;font-size:.7rem;font-weight:500;letter-spacing:.14em}
+html[data-ui="hanami"] .aki-bola .aki-teks{
+  margin-top:10px;font-family:var(--font-judul);font-size:clamp(1.2rem,2vw,1.6rem);
+  font-weight:500;letter-spacing:.04em;line-height:1.85;
+}
+
+html[data-ui="hanami"] .aki-maju{margin-top:26px;padding:0 4px}
+html[data-ui="hanami"] .aki-maju-label,
+html[data-ui="hanami"] .aki-maju-angka{font-size:.7rem;letter-spacing:.08em;font-weight:500;color:var(--muted)}
+html[data-ui="hanami"] .aki-batang{
+  height:6px;border:0;border-radius:999px;overflow:visible;background:var(--kilau);
+}
+html[data-ui="hanami"] .aki-batang span{
+  position:relative;border-radius:inherit;
+  background:linear-gradient(90deg,var(--sakura-pucat),var(--sakura));
+}
+/* Kelopak kecil di ujung isi progres. */
+html[data-ui="hanami"] .aki-batang span::after{
+  content:"";position:absolute;right:-7px;top:50%;width:14px;height:14px;
+  border-radius:0 100% 0 100%;background:var(--sakura-tua);transform:translateY(-50%) rotate(45deg);
+}
+
+/* Jawaban: baris kelopak. Iya/Tidak besar di atas (masing-masing 3
+   dari 6 kolom), tiga sisanya satu baris (masing-masing 2 kolom). */
+html[data-ui="hanami"] .aki-jawab{
+  display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-top:28px;
+}
+html[data-ui="hanami"] .aki-tombol{
+  grid-column:span 2;flex-direction:column;gap:6px;min-height:76px;padding:12px 8px;
+  font-size:.95rem;font-weight:500;letter-spacing:.03em;text-align:center;
+  background:var(--permukaan);border:1px solid var(--hair);border-radius:var(--r);
+  transition:transform .4s var(--ease),background .4s var(--ease),border-color .4s var(--ease),box-shadow .4s var(--ease);
+}
+html[data-ui="hanami"] .aki-tombol:nth-child(-n+2){grid-column:span 3;min-height:88px;font-size:1.12rem}
+html[data-ui="hanami"] .aki-tombol[data-j="0"]{
+  background:color-mix(in srgb,var(--sakura) 20%,var(--permukaan));border-color:color-mix(in srgb,var(--sakura) 55%,var(--hair));
+}
+html[data-ui="hanami"] .aki-tombol .ki{
+  position:static;display:grid;place-items:center;width:26px;height:26px;border-radius:0 100% 0 100%;
+  background:color-mix(in srgb,var(--sakura) 30%,var(--permukaan));color:var(--ink);font-size:.64rem;font-weight:500;
+}
+html[data-ui="hanami"] .aki-tombol:hover:not(:disabled),
+html[data-ui="hanami"] .aki-tombol:focus-visible:not(:disabled){
+  transform:translateY(-3px);background:color-mix(in srgb,var(--sakura) 26%,var(--permukaan));border-color:var(--sakura);
+  box-shadow:0 16px 26px -20px var(--sakura-tua);
+}
+
+html[data-ui="hanami"] .aki-kontrol{margin-top:24px;padding-top:0;border-top:0}
+html[data-ui="hanami"] .aki-kontrol .tautan-kecil{border-bottom:1px solid var(--hair);color:var(--muted)}
+html[data-ui="hanami"] .aki-kontrol .tautan-kecil:hover{border-bottom-color:var(--sakura)}
+html[data-ui="hanami"] .aki-catatan{font-size:.74rem;letter-spacing:.06em}
+
+html[data-ui="hanami"] .aki-buka{
+  width:fit-content;margin-bottom:10px;padding:7px 18px;border-radius:var(--r);
+  background:color-mix(in srgb,var(--sakura) 18%,var(--permukaan));color:var(--ink);
+  font-size:.72rem;font-weight:500;letter-spacing:.1em;
+}
+html[data-ui="hanami"] .aki-buka::before{display:none}
+html[data-ui="hanami"] .aki-buka.h2{
+  padding:0;border-radius:0;background:transparent;text-transform:none;
+  font-family:var(--font-judul);font-size:clamp(1.5rem,2.6vw,2.1rem);font-weight:500;letter-spacing:.05em;line-height:1.5;
+}
+
+html[data-ui="hanami"] .aki-intro p{max-width:50ch}
+html[data-ui="hanami"] .aki-cara{margin:22px 0 28px}
+html[data-ui="hanami"] .aki-cara li{display:flex;gap:14px;padding:8px 0}
+html[data-ui="hanami"] .aki-cara li + li{border-top:0}
+html[data-ui="hanami"] .aki-cara li::before{
+  content:"";flex:none;width:11px;height:11px;margin-top:.55em;border-radius:0 100% 0 100%;
+  background:var(--sakura);transform:rotate(45deg);
+}
+html[data-ui="hanami"] .aki-intro .btn{width:auto;min-width:240px}
+
+html[data-ui="hanami"] .aksi-tebakan{align-items:center;gap:24px;margin-top:16px;padding:22px 0 4px}
+html[data-ui="hanami"] .aki-foto{
+  width:136px;height:136px;border:4px solid var(--permukaan);border-radius:var(--r-besar);
+  box-shadow:0 0 0 1px var(--sakura),0 18px 30px -22px var(--sakura-tua);
+}
+html[data-ui="hanami"] .aki-nama{font-weight:500;letter-spacing:.05em}
+html[data-ui="hanami"] .aki-nama.besar{font-size:clamp(1.9rem,3.8vw,2.7rem)}
+html[data-ui="hanami"] .aki-jawab.tebakan{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+html[data-ui="hanami"] .aki-jawab.tebakan .btn{min-height:52px;padding:0 28px}
+
+html[data-ui="hanami"] .aki-opsi{gap:10px;margin-top:20px}
+html[data-ui="hanami"] .aki-opsi-btn{
+  padding:14px 22px;border:1px solid var(--hair);border-radius:var(--r);background:var(--permukaan);
+  transition:transform .4s var(--ease),background .4s var(--ease),border-color .4s var(--ease);
+}
+html[data-ui="hanami"] .aki-opsi-btn:hover:not(:disabled),
+html[data-ui="hanami"] .aki-opsi-btn:focus-visible:not(:disabled){
+  transform:translateY(-2px);box-shadow:none;border-color:var(--sakura);
+  background:color-mix(in srgb,var(--sakura) 20%,var(--permukaan));
+}
+
+html[data-ui="hanami"] .aki-galat{
+  border:1px dashed var(--sakura);border-radius:var(--r);
+  background:color-mix(in srgb,var(--sakura) 10%,var(--permukaan));
+}
+
+/* Menang: bingkai kelopak berpendar sakura. */
+html[data-ui="hanami"] .aki-papan.menang .aki-wadah{
+  box-shadow:0 0 0 7px color-mix(in srgb,var(--sakura) 34%,transparent),
+             0 26px 44px -30px color-mix(in srgb,var(--sakura-tua) 75%,transparent);
+}
+
+
+/* ============================================================
+   4. HP / LAYAR SEMPIT (<= 820px) — semua gaya numpuk: genie di
+   atas, konten di bawah. Flip sisi gak relevan di layout numpuk.
+   ============================================================ */
+@media(max-width:820px){
+  /* ---- Swiss ---- */
+  html[data-ui="swiss"] .aki-head{display:block}
+  html[data-ui="swiss"] .aki-head .lede{margin-top:24px;padding-bottom:0}
+  html[data-ui="swiss"] .aki-grid{grid-template-columns:1fr;min-height:0}
+  html[data-ui="swiss"] .aki-genie,
+  html[data-ui="swiss"] .aki-papan[data-sisi="kanan"] .aki-genie{
+    padding:22px 0 12px;border-right:0;border-left:0;border-bottom:1px solid var(--hair);
+  }
+  html[data-ui="swiss"] .aki-wadah{flex:none;height:min(46vh,380px)}
+  html[data-ui="swiss"] .aki-badan,
+  html[data-ui="swiss"] .aki-papan[data-sisi="kanan"] .aki-badan{padding:28px 0 24px}
+  html[data-ui="swiss"] .aki-bola{grid-template-columns:1fr;row-gap:16px;align-items:start}
+  html[data-ui="swiss"] .aki-bola .aki-no{grid-column:1;flex-direction:row;align-items:baseline;gap:14px}
+  html[data-ui="swiss"] .aki-bola .aki-teks{grid-column:1}
+  html[data-ui="swiss"] .aki-no-n{font-size:2.6rem}
+  html[data-ui="swiss"] .aksi-tebakan{grid-template-columns:1fr;gap:20px}
+  html[data-ui="swiss"] .aki-jawab.tebakan{grid-template-columns:1fr}
+
+  /* ---- Japandi ---- */
+  html[data-ui="japandi"] .aki-grid{grid-template-columns:1fr;min-height:0}
+  html[data-ui="japandi"] .aki-wadah{flex:none;height:min(46vh,400px)}
+  html[data-ui="japandi"] .aki-kaki span{display:none}
+  html[data-ui="japandi"] .aki-badan{padding:26px 20px 24px}
+  html[data-ui="japandi"] .aki-bola{padding:18px 20px 22px}
+  html[data-ui="japandi"] .aki-tombol{flex:1 1 calc(50% - 10px)}
+  html[data-ui="japandi"] .aksi-tebakan{padding:18px}
+
+  /* ---- Hanami ---- */
+  html[data-ui="hanami"] .aki-grid{grid-template-columns:1fr;min-height:0}
+  html[data-ui="hanami"] .aki-genie,
+  html[data-ui="hanami"] .aki-papan[data-sisi="kanan"] .aki-genie{
+    width:min(100%,380px);margin:0 auto 16px;order:0;
+  }
+  html[data-ui="hanami"] .aki-wadah{flex:none;height:min(46vh,400px)}
+  html[data-ui="hanami"] .aki-kaki,
+  html[data-ui="hanami"] .aki-papan[data-sisi="kanan"] .aki-kaki{padding:0 4px}
+  html[data-ui="hanami"] .aki-kaki span{display:none}
+  html[data-ui="hanami"] .aki-badan,
+  html[data-ui="hanami"] .aki-papan[data-sisi="kanan"] .aki-badan{padding:26px 20px 24px;order:0}
+  html[data-ui="hanami"] .aki-bola{padding:18px 20px 22px}
+  /* Ekor gelembung ke atas (genie ada di atas). */
+  html[data-ui="hanami"] .aki-bola::before,
+  html[data-ui="hanami"] .aki-papan[data-sisi="kanan"] .aki-bola::before{
+    top:-9px;left:50%;right:auto;margin-left:-9px;transform:rotate(-135deg);
+  }
+  html[data-ui="hanami"] .aki-tombol{min-height:68px}
+  html[data-ui="hanami"] .aki-tombol:nth-child(-n+2){min-height:76px}
+  html[data-ui="hanami"] .aki-foto{width:112px;height:112px}
+}
+
+@media(max-width:400px){
+  html[data-ui="japandi"] .aki-tombol{flex-basis:100%}
+  html[data-ui="hanami"] .aki-tombol{font-size:.88rem}
+}
+
+/* Gerak dikurangi: matiin angkat/geser hover di tiga gaya. */
+@media(prefers-reduced-motion:reduce){
+  html[data-ui="swiss"] .aki-tombol,
+  html[data-ui="swiss"] .aki-tombol::after,
+  html[data-ui="swiss"] .aki-opsi-btn,
+  html[data-ui="swiss"] .aki-foto,
+  html[data-ui="japandi"] .aki-tombol,
+  html[data-ui="japandi"] .aki-opsi-btn,
+  html[data-ui="hanami"] .aki-tombol,
+  html[data-ui="hanami"] .aki-opsi-btn,
+  html[data-ui="hanami"] .aki-wadah{transition:none}
+  html[data-ui="japandi"] .aki-tombol:hover:not(:disabled),
+  html[data-ui="japandi"] .aki-opsi-btn:hover:not(:disabled),
+  html[data-ui="hanami"] .aki-tombol:hover:not(:disabled),
+  html[data-ui="hanami"] .aki-opsi-btn:hover:not(:disabled){transform:none}
+}
