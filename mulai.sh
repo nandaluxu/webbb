@@ -34,17 +34,8 @@ echo ">> 3/5 siapin database SQLite (file db/custom.db, dibikin otomatis)..."
 # gak ambigu (prisma kadang nge-resolve path relatif ke lokasi laen).
 echo "DATABASE_URL=file:$(pwd)/db/custom.db" > .env
 export DATABASE_URL="file:$(pwd)/db/custom.db" # eksplisit — env luar gak bisa nyasar db laen
-# bunx kadang gak kepasang sebagai command sendiri walau bun ada,
-# jadi: bunx -> "bun x" -> npx.
-if [ "$RUN" = bun ]; then
-  if command -v bunx >/dev/null 2>&1; then
-    bunx prisma db push
-  else
-    bun x prisma db push
-  fi
-else
-  npx prisma db push
-fi
+# Pake npx aja biar stabil di PM2 / background (bunx suka abort di PM2).
+npx prisma db push
 
 echo ">> 4/5 pastiin akun owner (Neyhra) ada..."
 # Idempoten: cuma bikin kalo belum ada, sandi yang udah diganti gak
