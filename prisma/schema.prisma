@@ -59,6 +59,33 @@ model Pengguna {
   /* r30: akun AM V2 + job AI Image Editor. */
   amAkun    AmAkunV2[]
   editJob   EditGambarJob[]
+  /* r32: pesan chat pribadi (teman = mutual follow). */
+  pvDari    PesanPribadi[] @relation("PvDari")
+  pvKe      PesanPribadi[] @relation("PvKe")
+}
+
+// Chat PRIBADI antar teman (r32). TEMAN = follow balik otomatis:
+// relasi mutual di tabel Ikuti (A ikut B + B ikut A) — gak ada
+// tabel teman sendiri, cukup query irisan. Buat ngirim pesan
+// WAJIB masih teman (dicek server tiap kirim; unfriend = gak
+// bisa kirim baru, riwayat lama tetep kesimpen — balik teman
+// lagi, obrolanny lanjut dari mana terakhir).
+// baca = tanda waktu pesan ny dibaca penerima (null = belum).
+// Index ganda (dariId,keId,waktu) + (keId,waktu) biar dua pola
+// query utama (riwayat satu pasangan + daftar belum-baca) dua-
+// duany murah di SQLite.
+model PesanPribadi {
+  id     String   @id @default(cuid())
+  dariId String
+  dari   Pengguna @relation("PvDari", fields: [dariId], references: [id], onDelete: Cascade)
+  keId   String
+  ke     Pengguna @relation("PvKe", fields: [keId], references: [id], onDelete: Cascade)
+  teks   String
+  baca   DateTime?
+  waktu  DateTime @default(now())
+
+  @@index([dariId, keId, waktu])
+  @@index([keId, waktu])
 }
 
 // Relasi follow (r27): user A (pengikut) nge-follow user B (diikuti).

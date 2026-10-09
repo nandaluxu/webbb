@@ -196,3 +196,22 @@ npm run dev                                  # PORT=8080 npm run dev buat ganti 
   `TandaSVG` (TicTacToe.tsx); tangga ubin 2048 per tema ditulis eksplisit
   (l1-l13) biar kontras angka ny aman di terang + gelap. Mau tema baru:
   tambahin blok `html[data-ui="..."]` di file itu, ngikutin pola yang udah ada.
+- **Berteman + Chat Pribadi (r32)**: TEMAN = saling follow (follow
+  balik otomatis jadi teman, gak ada tabel terpisah — relasi ny
+  irisan dua arah tabel Ikuti, jadi unfollow salah satu sisi =
+  otomatis gak teman lagi). Di profil orang yang udah ikutin kita,
+  tombolny jadi "Follow balik"; pas udah teman muncul chip "Teman"
+  + tombol "Chat pribadi". Chat pribadi = panel ala WhatsApp
+  (daftar kotak teman + cuplikan pesan terakhir + badge belum
+  dibaca; section "Nunggu dibalas" buat follow balik sekali klik).
+  JALANNYA: menu samping (bawah Pengaturan, gak di header) ATAU
+  tombol Chat pribadi di profil teman. Pesan kesimpen di
+  `db/custom.db` (tabel PesanPribadi) — riwayat tetep ada walau
+  unfriend, tapi kirim baru wajib masih teman (403 kalau bukan).
+  Realtime lewat mini-service obrolan (ruang socket per pasangan,
+  `pv:` + dua id ke-sort): pesan baru, indikator "lagi nulis",
+  dan tanda ✓ jadi ✓✓ pas dibaca; polling 6 detik jadi cadangan.
+  Enter = kirim, Shift+Enter = baris baru. Gaya ny ikut 4 tema UI
+  (`src/app/chat-pribadi.css`, scope `.cp-*`). PENTING pas update
+  dari versi lama: tabel baru — cukup jalanin `mulai.sh` biasa
+  (langkah db push ny yang ngebuat), jangan hapus `db/custom.db`.

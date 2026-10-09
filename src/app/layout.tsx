@@ -16,6 +16,14 @@ import "./ruang-obrol.css";
    (Swiss, Japandi, Hanami). Dimuat PALING AKHIR biar nimpa detail
    brutalis globals (kertas titik, bayangan keras) di gaya lain. */
 import "./permainan.css";
+/* Akinator: tema halaman genie — layout ny emang beda per tema
+   (tipografis Swiss / tokonoma Japandi / jendela arch Hanami),
+   bukan cuma ganti warna. Dimuat paling akhir, alasan ny sama. */
+import "./akinator.css";
+/* Chat pribadi (r32): tema panel obrolan teman ala WhatsApp (klasik
+   enhanced, Swiss hairline, Japandi linen, Hanami sakura). Scope
+   .cp-* + html[data-ui], dimuat paling akhir — alasan ny sama. */
+import "./chat-pribadi.css";
 import Kerangka from "@/components/Kerangka";
 
 export const metadata: Metadata = {

@@ -2,15 +2,17 @@
 
 /* Menu samping: navigasi utama situs (dibuka dari kanan). Isi ny:
    PFP + nama + badge terverifikasi di atas, terus menu akun (Profil,
-   Pengaturan, Dashboard khusus owner, Keluar), dan menu halaman
-   (Utama, Galeri, Fitur). Tutup pake Esc, klik backdrop, atau tombol
-   X. Fokus dijaga di dalam panel biar Tab gak nyasar ke belakang. */
+   Pengaturan, Chat pribadi, Dashboard khusus owner, Keluar), dan
+   menu halaman (Utama, Galeri, Fitur). Tutup pake Esc, klik backdrop,
+   atau tombol X. Fokus dijaga di dalam panel biar Tab gak nyasar ke
+   belakang. */
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MenuIkon, OrangIkon, TutupIkon, LencanaVerified, PanahKeluar } from "@/components/ikon";
 import { useSesi, bukaPintu, keluar } from "@/lib/sesi-pengguna";
+import { bukaChat } from "@/lib/chat-pribadi";
 import { mainkanSfx } from "@/lib/suara";
 import { kunciGulir, bukaKunciGulir } from "@/lib/gulir";
 
@@ -25,9 +27,30 @@ export default function MenuSisa() {
   const rute = usePathname() || "/";
   const { siap, masuk, pengguna } = useSesi();
   const [buka, setBuka] = useState(false);
+  /* Badge chat pribadi (r32): jumlah pesan teman yang belum dibaca.
+     Diambil pas menu kebuka + disegarkan tiap panel chat ny ngasih
+     kabar (event "cp:perbarui" dari komponen ChatPribadi). */
+  const [belumBaca, setBelumBaca] = useState(0);
   const tombolRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const tutupRef = useRef<HTMLButtonElement>(null);
+
+  /* Angka belum-baca ny ikut menu (bukan cuma pas panel chat kebuka). */
+  useEffect(() => {
+    if (!masuk) {
+      setBelumBaca(0);
+      return;
+    }
+    const ambil = () => {
+      fetch("/api/teman?ringkas=1", { cache: "no-store", signal: AbortSignal.timeout(8000) })
+        .then((r) => (r.ok ? r.json() : Promise.reject()))
+        .then((d) => setBelumBaca(d.jumlahBelumBaca ?? 0))
+        .catch(() => {});
+    };
+    ambil();
+    window.addEventListener("cp:perbarui", ambil);
+    return () => window.removeEventListener("cp:perbarui", ambil);
+  }, [masuk]);
 
   useEffect(() => {
     if (!buka) return;
@@ -165,6 +188,30 @@ export default function MenuSisa() {
                       Pengaturan
                     </Link>
                   </li>
+                </>
+              )}
+              {/* Chat pribadi (r32): DI BAWAH Pengaturan, sesuai
+                  permintaan — bukan di header. Keliatan buat tamu
+                  juga: diklik -> gerbang login (fitur ny gak
+                  ngumpet, tapi tetep login-gated). */}
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        tutup();
+                        bukaChat();
+                      }}
+                    >
+                      Chat pribadi
+                      {belumBaca > 0 && (
+                        <span className="sisa-badge" aria-label={belumBaca + " pesan belum dibaca"}>
+                          {belumBaca > 99 ? "99+" : belumBaca}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+              {masuk && (
+                <>
                   {pengguna?.admin && (
                     <li>
                       <Link href="/admin" onClick={tutup} aria-current={rute.startsWith("/admin") ? "page" : undefined}>

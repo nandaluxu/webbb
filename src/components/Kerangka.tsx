@@ -23,6 +23,7 @@ import TemaToggle from "@/components/TemaToggle";
 import SuaraBtn from "@/components/SuaraBtn";
 import PusatNotifikasi from "@/components/PusatNotifikasi";
 import MenuSisa from "@/components/MenuSisa";
+import ChatPribadi from "@/components/ChatPribadi";
 import PintuGlobal from "@/components/PintuLogin";
 import { Merek } from "@/components/ikon";
 import { pasangJaringan } from "@/lib/jaringan";
@@ -147,6 +148,9 @@ export default function Kerangka({ children }: { children: React.ReactNode }) {
       <PenampilMount />
       <GulirBar />
       <PintuGlobal />
+      {/* Chat pribadi (r32): overlay global — dibuka dari menu samping
+          atau tombol Chat di profil teman, gak nempel route apa pun. */}
+      <ChatPribadi />
     </div>
   );
 }

@@ -13,7 +13,10 @@ import { scanGaleri, susunPublik } from "@/lib/media-server";
    - sukaDiberikan + jumlahKomentar: masuk section "Aktivitas
      lainnya" (optional, di-collapse).
    - jumlahPengikut / jumlahMengikuti: dari relasi Ikuti.
-   - ikutiSaya: apakah penonton (kalau login) nge-follow user ini. */
+   - ikutiSaya: apakah penonton (kalau login) nge-follow user ini.
+   - mengikutiSaya (r32): apakah user ini nge-follow penonton —
+     pemicu tombol "Follow balik" di profil ny.
+   - teman (r32): mutual follow = teman (pemicu tombol Chat pribadi). */
 
 async function cariUser(x: string) {
   const kunci = decodeURIComponent(x).replace(/\s+/g, " ").trim();
@@ -44,7 +47,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ nama: s
        dibatasi dari Gallery, profil tetep keliatan orang lain;
        PRIVATE gak). */
   const pemilikSendiri = !!sesi && sesi.id === user.id;
-  const [media, sukaDiberikan, jumlahKomentar, sukaDiterima, jumlahPengikut, jumlahMengikuti, ikutSaya] = await Promise.all([
+  const [media, sukaDiberikan, jumlahKomentar, sukaDiterima, jumlahPengikut, jumlahMengikuti, ikutSaya, diaIkutSaya] = await Promise.all([
     db.media.findMany({
       where: {
         userId: user.id,
@@ -62,6 +65,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ nama: s
     sesi && !pemilikSendiri
       ? db.ikuti.findUnique({ where: { pengikutId_diikutiId: { pengikutId: sesi.id, diikutiId: user.id } }, select: { id: true } })
       : Promise.resolve(null),
+    /* r32: apakah DIA yang nge-follow penonton (bukan sebaliknya)?
+       Dipake buat label "Follow balik" + status teman. */
+    sesi && !pemilikSendiri
+      ? db.ikuti.findUnique({ where: { pengikutId_diikutiId: { pengikutId: user.id, diikutiId: sesi.id } }, select: { id: true } })
+      : Promise.resolve(null),
   ]);
 
   return NextResponse.json({
@@ -74,6 +82,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ nama: s
     jumlahPengikut,
     jumlahMengikuti,
     ikutiSaya: !!ikutSaya,
+    mengikutiSaya: !!diaIkutSaya,
+    teman: !!ikutSaya && !!diaIkutSaya,
     punyaProfilSendiri: pemilikSendiri,
   });
 }

@@ -37,6 +37,17 @@ function siarkanDaring() {
   io.emit("daring", daftarDaring());
 }
 
+/* ---------- Chat pribadi (r32) ----------
+   Ruang per pasangan teman: "pv:" + dua userId ke-sort, jadi dua
+   browser yang nge-join pasangan yang sama pasti nyampe di ruang
+   yang sama (gak peduli siapa yang nge-join duluan). Key ny
+   dihitung dari id yang dikirim klien + id pengirim di umpan
+   port dari API Next.js — dua-duany pake fungsi ini, jadi gak
+   bisa geser mesh. */
+function ruanganPv(a, b) {
+  return "pv:" + [String(a), String(b)].sort().join("+");
+}
+
 io.on("connection", (socket) => {
   socket.on("gabung", (data) => {
     const nama = String(data?.nama ?? "").slice(0, 24);
@@ -52,6 +63,27 @@ io.on("connection", (socket) => {
     socket.broadcast.emit("menulis", { nama });
   });
 
+  /* Chat pribadi: klien minta masuk/keluar ruang obrolan sama satu
+     teman (ganti lawan bicara = lepas ruang lama, gabung ruang baru).
+     Id ny dipake cuma buat nyusun nama ruang, gak disimpen. */
+  socket.on("pv-gabung", (data) => {
+    const a = String(data?.diri ?? ""), b = String(data?.lawan ?? "");
+    if (!a || !b || a === b) return;
+    socket.join(ruanganPv(a, b));
+  });
+  socket.on("pv-lepas", (data) => {
+    const a = String(data?.diri ?? ""), b = String(data?.lawan ?? "");
+    if (!a || !b) return;
+    socket.leave(ruanganPv(a, b));
+  });
+  /* Indikator nulis versi pribadi: cuma ke ruang pasangan ny, dan
+     cuma ke socket LAIN (si pengirim udah jelas lagi nulis). */
+  socket.on("pv-menulis", (data) => {
+    const a = String(data?.diri ?? ""), b = String(data?.lawan ?? "");
+    if (!a || !b || a === b) return;
+    socket.to(ruanganPv(a, b)).emit("pv-menulis", { dari: a });
+  });
+
   socket.on("disconnect", () => {
     if (pemakai.delete(socket.id)) siarkanDaring();
   });
@@ -63,8 +95,30 @@ const serverTerbit = createServer((req, res) => {
     res.writeHead(404).end();
     return;
   }
-  const hapus = req.url?.startsWith("/hapus");
-  if (!hapus && !req.url?.startsWith("/terbit")) {
+  const url = req.url ?? "";
+  /* Chat pribadi: ke ruang pasangan doang (bukan siaran umum).
+     Dua kabar: pesan baru (pesan) + tanda "udah kebaca"
+     (baca: { dariId }) — si pengirim tau ✓ ny barusan jadi ✓✓. */
+  if (url.startsWith("/terbit-pv")) {
+    let isi = "";
+    req.on("data", (c) => (isi += c));
+    req.on("end", () => {
+      try {
+        const data = JSON.parse(isi);
+        const ruangan = String(data?.ruangan ?? "");
+        if (ruangan) {
+          if (data.baca) io.to(ruangan).emit("pv-baca", { dari: String(data.baca.dariId ?? "") });
+          else io.to(ruangan).emit("pv-pesan", data.pesan);
+        }
+        res.writeHead(204).end();
+      } catch {
+        res.writeHead(400).end();
+      }
+    });
+    return;
+  }
+  const hapus = url.startsWith("/hapus");
+  if (!hapus && !url.startsWith("/terbit")) {
     res.writeHead(404).end();
     return;
   }

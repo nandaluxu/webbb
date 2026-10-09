@@ -3,7 +3,11 @@
 /* Profil user lain (r27): pfp, nama + badge, @username, bio (mention
    ke-link), stats (Post | Pengikut | Mengikuti | Like diterima +
    section aktivitas lainnya), tombol Ikuti/Henti Ikuti (optimistic,
-   login-gated), post galeri ny. */
+   login-gated), post galeri ny.
+   r32: tombol ikut makin ngerti keadaan — kalau DIA yang udah ikutin
+   penonton duluan, label ny "Follow balik"; setelah dibalas (mutual
+   follow) status ny jadi TEMAN + muncul tombol Chat pribadi yang
+   langsung buka obrolan sama dia. */
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -13,6 +17,7 @@ import MenuAksi, { type AksiItem } from "@/components/MenuAksi";
 import Konfirmasi from "@/components/Konfirmasi";
 import { BioSebut } from "@/components/SebutOtomatis";
 import { useSesi, bukaPintu, tolakSesi } from "@/lib/sesi-pengguna";
+import { bukaChat } from "@/lib/chat-pribadi";
 import { mainkanSfx } from "@/lib/suara";
 import { salinTeks } from "@/lib/salin-chat";
 import type { MediaPublik, Visibilitas } from "@/lib/tipe-media";
@@ -27,6 +32,9 @@ type DataProfil = {
   jumlahPengikut: number;
   jumlahMengikuti: number;
   ikutiSaya: boolean;
+  /* r32: dia ikut aku? (pemicu "Follow balik") + status teman. */
+  mengikutiSaya: boolean;
+  teman: boolean;
   punyaProfilSendiri: boolean;
 };
 
@@ -54,6 +62,7 @@ export default function ProfilOrang({ nama }: { nama: string }) {
   const [status, setStatus] = useState<"muat" | "gagal" | "siap" | "kosong">("muat");
   const [pesan, setPesan] = useState("");
   const [ikut, setIkut] = useState(false);
+  const [diaIkutAku, setDiaIkutAku] = useState(false);
   const [jumlahPengikut, setJumlahPengikut] = useState(0);
   const [sibukIkut, setSibukIkut] = useState(false);
   const [aktivitasBuka, setAktivitasBuka] = useState(false);
@@ -82,6 +91,7 @@ export default function ProfilOrang({ nama }: { nama: string }) {
         }
         setData(hasil.data);
         setIkut(hasil.data.ikutiSaya);
+        setDiaIkutAku(!!hasil.data.mengikutiSaya);
         setJumlahPengikut(hasil.data.jumlahPengikut);
         setStatus("siap");
       });
@@ -218,6 +228,13 @@ export default function ProfilOrang({ nama }: { nama: string }) {
         return;
       }
       setJumlahPengikut(d.jumlahPengikut ?? sebelum.jumlah);
+      /* r32: follow balik yang sukses = langsung jadi teman —
+         kasih kabar + pintasan ke obrolan pribadi. */
+      if (aksi === "ikut" && diaIkutAku) {
+        kabar("Jadi teman sama " + data.user.nama + " — chat pribadi kebuka");
+      } else if (aksi === "lepas" && diaIkutAku) {
+        kabar("Udah gak teman sama " + data.user.nama);
+      }
     } catch {
       setIkut(sebelum.ikut);
       setJumlahPengikut(sebelum.jumlah);
@@ -361,15 +378,32 @@ export default function ProfilOrang({ nama }: { nama: string }) {
           </div>
 
           {siap && !sendiri && (
-            <button
-              type="button"
-              className={"btn kecil" + (ikut ? "" : " primary")}
-              onClick={toggleIkut}
-              disabled={sibukIkut}
-              aria-pressed={ikut}
-            >
-              {ikut ? "Henti ikutin" : "Ikutin"}
-            </button>
+            <div className="profil-aksi">
+              {/* r32: label ny nurut keadaan relasi.
+                  - "Follow balik": dia udah ikutin aku duluan, aku
+                    belum — sekali klik = mutual = TEMAN.
+                  - udah teman (mutual): status "Teman" + pintasan
+                    langsung buka obrolan pribadi sama dia. */}
+              {ikut && diaIkutAku && (
+                <span className="profil-teman" title="Saling follow">
+                  <CentangIkon ukuran={12} /> Teman
+                </span>
+              )}
+              <button
+                type="button"
+                className={"btn kecil" + (ikut ? "" : " primary")}
+                onClick={toggleIkut}
+                disabled={sibukIkut}
+                aria-pressed={ikut}
+              >
+                {ikut ? "Henti ikutin" : diaIkutAku ? "Follow balik" : "Ikutin"}
+              </button>
+              {ikut && diaIkutAku && (
+                <button type="button" className="btn kecil primary profil-chat" onClick={() => bukaChat(user.id)}>
+                  Chat pribadi
+                </button>
+              )}
+            </div>
           )}
           {sendiri && (
             <p className="hint">
