@@ -1,11 +1,11 @@
 /* ============================================================
    Ruang Obrol — lapisan tema.
-   Satu ruang obrolan, empat kepribadian. Semua rule di-scope
+   Satu ruang obrolan, lima kepribadian. Semua rule di-scope
    .ruang-obrol (atau .obrol-tamu / .obrol-pintu) + html[data-ui],
    jadi Chat AI (yang juga pake .ruang) GAK ikut berubah.
 
    Dimuat PALING AKHIR (setelah globals, swiss-zen, japandi,
-   hanami) — lihat layout.tsx. Terang/gelap otomatis jalan
+   hanami, shinkai) — lihat layout.tsx. Terang/gelap otomatis jalan
    karena semua warna ngambil token tiap tema (--bg, --ink,
    --permukaan, --lumut, --sakura, dst), gak ada warna mati.
 
@@ -16,6 +16,7 @@
      2. Swiss   — hairline, label kapital, blok datar, kisi
      3. Japandi — linen, kayu, lumut, pil lembut, gerak pelan
      4. Hanami  — sudut kelopak, sakura, kaca bening, melayang
+     5. Shinkai — kaca jendela, langit biru, awan, emas matahari
    ============================================================ */
 
 /* ---------- 0. Dasar bersama ---------- */
@@ -53,7 +54,11 @@ html[data-chat-size="kecil"] .ruang-obrol{--av:23px;--av-gap:7px}
   font-size:calc(var(--av) * .4);font-weight:700;line-height:1;text-transform:uppercase;
   user-select:none;overflow:hidden;
 }
-.ruang-obrol .avatar-pesan.kosong{visibility:hidden}
+/* r34 FIX alignment: spacer avatar kebagian nama class .kosong yang
+   dipake empty-state (padding gede + border) — bikin kolom gelembung
+   pesan lawan gak lurus. Reset dasar; versi KUAT ny di PALING AKHIR
+   file (harus ngalahin rule .kosong per-tema di cascade). */
+.ruang-obrol .avatar-pesan.kosong{visibility:hidden;padding:0;border:0}
 @media(max-width:560px){
   .ruang-obrol .baris-pesan:not(.sendiri) .badan-pesan{max-width:calc(100% - var(--av) - var(--av-gap) - 40px)}
 }
@@ -64,7 +69,8 @@ html[data-chat-size="kecil"] .ruang-obrol{--av:23px;--av-gap:7px}
 html[data-ui="klasik"] .ruang-obrol .hias-klasik,
 html[data-ui="swiss"] .ruang-obrol .hias-swiss,
 html[data-ui="japandi"] .ruang-obrol .hias-japandi,
-html[data-ui="hanami"] .ruang-obrol .hias-hanami{display:block}
+html[data-ui="hanami"] .ruang-obrol .hias-hanami,
+html[data-ui="shinkai"] .ruang-obrol .hias-shinkai{display:block}
 .ruang-obrol .kosong-hias{display:block;width:76px;height:76px;margin:0 auto 18px}
 .ruang-obrol .obrol-lencana{flex:none;display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px}
 .ruang-obrol .hias .bg{fill:var(--bg)}
@@ -449,22 +455,168 @@ html[data-ui="hanami"] .ruang-obrol .baris-pesan.sendiri.baru{animation-name:obr
 
 
 /* ============================================================
-   5. HP + gerak dikurangi
+   5. SHINKAI — kaca jendela kereta, langit sinematik (r34)
+   ============================================================ */
+html[data-ui="shinkai"] .ruang-obrol{
+  --o-bg-lain:color-mix(in srgb,var(--permukaan) 94%,transparent);
+  --o-bg-sendiri:var(--langit-tua);
+  --o-fg-sendiri:#FFFFFF;
+  --o-jam-sendiri:color-mix(in srgb,#FFFFFF 74%,var(--langit-tua));
+  --o-aksen:var(--langit-tua);
+  --av:32px;--av-gap:10px;
+  --bayang-gelembung:0 1px 2px rgba(23,53,91,.07),0 12px 26px -18px rgba(23,53,91,.4);
+  border:1px solid var(--hair);border-radius:var(--r-besar);
+  background:color-mix(in srgb,var(--permukaan) 58%,transparent);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  box-shadow:var(--bayang);overflow:hidden;
+}
+html[data-ui="shinkai"][data-tema="gelap"] .ruang-obrol{--bayang-gelembung:0 1px 2px rgba(0,0,0,.35),0 12px 26px -18px rgba(0,0,0,.75)}
+html[data-ui="shinkai"][data-chat-size="sedang"] .ruang-obrol{--av:29px}
+html[data-ui="shinkai"][data-chat-size="kecil"] .ruang-obrol{--av:25px}
+
+html[data-ui="shinkai"] .ruang-obrol .ruang-kepala{
+  padding:20px 28px;border-bottom:1px solid var(--hair);
+  background:color-mix(in srgb,var(--langit) 12%,transparent);
+}
+html[data-ui="shinkai"] .ruang-obrol .ruang-kepala .judul h2{font-family:var(--font-judul);font-size:1.25rem;font-weight:500;letter-spacing:.03em}
+html[data-ui="shinkai"] .ruang-obrol .ruang-kepala .judul p{font-weight:400;letter-spacing:.02em}
+html[data-ui="shinkai"] .ruang-obrol .obrol-lencana{width:40px;height:40px;padding:6px;border-radius:50%;background:color-mix(in srgb,var(--langit) 18%,transparent);color:var(--langit-tua)}
+
+html[data-ui="shinkai"] .ruang-obrol .daring{min-height:34px;padding:0 16px;border:0;border-radius:999px;background:color-mix(in srgb,var(--permukaan) 70%,transparent)}
+html[data-ui="shinkai"] .ruang-obrol .daring .titik{border-radius:50%}
+html[data-ui="shinkai"] .ruang-obrol .daring.nyala .titik{background:var(--matahari)}
+
+/* Area pesan: kaca tipis keliatan langit di belakang ny. */
+html[data-ui="shinkai"] .ruang-obrol .daftar-chat{
+  background:linear-gradient(color-mix(in srgb,var(--langit-pucat) 22%,transparent),color-mix(in srgb,var(--permukaan) 26%,transparent));
+  box-shadow:inset 0 14px 14px -16px rgba(23,53,91,.22),inset 0 -14px 14px -16px rgba(23,53,91,.18);
+}
+
+/* Gelembung: sudut awan (beda sisi buat lawan/sendiri). */
+html[data-ui="shinkai"] .ruang-obrol .gelembung{
+  border:1px solid var(--hair);border-radius:18px 18px 18px 6px;box-shadow:var(--bayang-gelembung);
+  padding-left:calc(var(--chat-pad-x,14px) + 3px);padding-right:calc(var(--chat-pad-x,14px) + 3px);
+}
+html[data-ui="shinkai"] .ruang-obrol .sendiri .gelembung{
+  border-radius:18px 18px 6px 18px;border-color:transparent;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--langit) 36%,transparent);
+}
+html[data-ui="shinkai"] .ruang-obrol .kepala-pesan .nama{font-family:var(--font-isi);font-size:.76rem;font-weight:500;letter-spacing:.04em;color:var(--langit-tua)}
+html[data-ui="shinkai"] .ruang-obrol .balas-konteks{
+  border-left:2px solid var(--langit);border-radius:2px 10px 10px 2px;background:color-mix(in srgb,var(--langit) 10%,transparent);
+  padding-left:10px;opacity:1;
+}
+html[data-ui="shinkai"] .ruang-obrol .sendiri .balas-konteks{opacity:.92}
+
+html[data-ui="shinkai"] .ruang-obrol .avatar-pesan{
+  --c:var(--langit);
+  border:0;border-radius:50%;font-family:var(--font-judul);font-weight:500;
+  background:color-mix(in srgb,var(--c) 22%,var(--permukaan));
+  color:color-mix(in srgb,var(--c) 52%,var(--ink));
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 30%,transparent);
+}
+html[data-ui="shinkai"] .ruang-obrol .avatar-pesan[data-w="1"]{--c:var(--matahari)}
+html[data-ui="shinkai"] .ruang-obrol .avatar-pesan[data-w="2"]{--c:var(--senja)}
+html[data-ui="shinkai"] .ruang-obrol .avatar-pesan[data-w="3"]{--c:var(--langit-tua)}
+html[data-ui="shinkai"] .ruang-obrol .avatar-pesan[data-w="4"]{--c:#8FB8D8}
+
+/* Pemisah: pil kaca + titik matahari. */
+html[data-ui="shinkai"] .ruang-obrol .pemisah{justify-content:center;margin:26px 0 16px}
+html[data-ui="shinkai"] .ruang-obrol .pemisah::before,
+html[data-ui="shinkai"] .ruang-obrol .pemisah::after{background:linear-gradient(90deg,transparent,var(--hair))}
+html[data-ui="shinkai"] .ruang-obrol .pemisah::after{background:linear-gradient(90deg,var(--hair),transparent)}
+html[data-ui="shinkai"] .ruang-obrol .pemisah span{padding:4px 16px;border:0;border-radius:999px;background:color-mix(in srgb,var(--permukaan) 76%,transparent);color:var(--muted);font-size:.74rem;letter-spacing:.05em}
+
+/* Indikator nulis: tetes langit naik-turun. */
+html[data-ui="shinkai"] .ruang-obrol .bar-menulis .ketik{gap:5px}
+html[data-ui="shinkai"] .ruang-obrol .bar-menulis .ketik i{width:6px;height:6px;border-radius:50%;background:var(--langit);animation:obrol-titik-pelan 1.8s ease-in-out infinite}
+html[data-ui="shinkai"] .ruang-obrol .bar-menulis .ketik i:nth-child(2){animation-delay:.25s}
+html[data-ui="shinkai"] .ruang-obrol .bar-menulis .ketik i:nth-child(3){animation-delay:.5s}
+
+html[data-ui="shinkai"] .ruang-obrol .komposer{padding:16px 22px;gap:12px;align-items:flex-end;border-top:1px solid var(--hair);background:color-mix(in srgb,var(--permukaan) 62%,transparent)}
+html[data-ui="shinkai"] .ruang-obrol .komposer textarea{border:1px solid var(--hair);border-radius:22px;padding:12px 20px;background:var(--permukaan)}
+html[data-ui="shinkai"] .ruang-obrol .komposer textarea:focus,
+html[data-ui="shinkai"] .ruang-obrol .komposer textarea:focus-visible{outline:0;border-color:var(--langit-tua);box-shadow:0 0 0 3px color-mix(in srgb,var(--langit) 28%,transparent)}
+html[data-ui="shinkai"] .ruang-obrol .komposer .btn{width:48px;min-height:48px;height:48px;padding:0;border-radius:50%}
+html[data-ui="shinkai"] .ruang-obrol .balas-bar{background:color-mix(in srgb,var(--langit) 10%,transparent);border-top:1px solid var(--hair);border-left:3px solid var(--langit-tua)}
+html[data-ui="shinkai"] .ruang-obrol .bar-pilih{background:color-mix(in srgb,var(--langit) 10%,transparent);border-top:1px solid var(--hair)}
+
+html[data-ui="shinkai"] .ruang-obrol .tombol-balas{border-radius:50%;border-color:var(--hair);background:var(--permukaan)}
+html[data-ui="shinkai"] .ruang-obrol .tombol-balas:hover,
+html[data-ui="shinkai"] .ruang-obrol .tombol-balas:focus-visible{border-color:var(--langit);background:color-mix(in srgb,var(--langit) 18%,var(--permukaan));color:var(--ink)}
+html[data-ui="shinkai"] .ruang-obrol .tanda-kotak{border-radius:50%;border-color:var(--langit-tua)}
+html[data-ui="shinkai"] .ruang-obrol .baris-pesan.terpilih .tanda-kotak{background:var(--langit-tua);color:#FFF;border-color:var(--langit-tua)}
+html[data-ui="shinkai"] .ruang-obrol .baris-pesan.terpilih:not(.sendiri) .gelembung{
+  background:color-mix(in srgb,var(--langit) 14%,var(--permukaan));box-shadow:inset 0 0 0 2px var(--langit-tua);
+}
+html[data-ui="shinkai"] .ruang-obrol .baris-pesan.terpilih.sendiri .gelembung{box-shadow:inset 0 0 0 2px var(--matahari)}
+
+html[data-ui="shinkai"] .ruang-obrol .chip-turun button,
+html[data-ui="shinkai"] .ruang-obrol .chip-umpan{
+  border:0;border-radius:999px;background:var(--langit-tua);color:#FFF;
+  box-shadow:0 12px 26px -14px color-mix(in srgb,var(--langit-tua) 85%,transparent);
+}
+html[data-ui="shinkai"] .ruang-obrol .kosong{border:1px dashed color-mix(in srgb,var(--langit) 60%,transparent);border-radius:var(--r-besar);background:color-mix(in srgb,var(--permukaan) 34%,transparent);font-weight:400;padding:48px 24px}
+html[data-ui="shinkai"] .ruang-obrol .kosong-hias{color:var(--langit-tua)}
+html[data-ui="shinkai"] .ruang-obrol .gagal{border:1px solid var(--hair);border-radius:var(--r)}
+
+/* Warna ilustrasi lencana shinkai (SVG di Obrolan.tsx). */
+html[data-ui="shinkai"] .ruang-obrol .hias-shinkai .matahari-hias{fill:var(--matahari)}
+html[data-ui="shinkai"] .ruang-obrol .hias-shinkai .awan-hias{fill:var(--permukaan);stroke:var(--hair);stroke-width:1.4;stroke-linejoin:round}
+html[data-ui="shinkai"] .ruang-obrol .hias-shinkai .burung-hias{stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;fill:none}
+
+html[data-ui="shinkai"] .obrol-tamu{border:1px solid var(--hair);border-radius:var(--r);background:color-mix(in srgb,var(--permukaan) 72%,transparent);padding:14px 24px}
+html[data-ui="shinkai"] .obrol-tamu .ganti{border-bottom:1px solid var(--langit-tua);padding:0 6px}
+html[data-ui="shinkai"] .obrol-pintu{border:1px solid var(--hair);border-radius:var(--r-besar);background:color-mix(in srgb,var(--permukaan) 76%,transparent)}
+
+/* Gerak: muncul melengkung naik kayak awan keangin. */
+html[data-ui="shinkai"] .ruang-obrol .baris-pesan.baru{animation:obrol-shinkai-masuk .55s var(--ease) both}
+html[data-ui="shinkai"] .ruang-obrol .baris-pesan.sendiri.baru{animation-name:obrol-shinkai-masuk-kanan}
+@keyframes obrol-shinkai-masuk{from{opacity:0;transform:translateY(10px) translateX(-6px)}to{opacity:1;transform:none}}
+@keyframes obrol-shinkai-masuk-kanan{from{opacity:0;transform:translateY(10px) translateX(6px)}to{opacity:1;transform:none}}
+
+
+/* ============================================================
+   6. HP + gerak dikurangi
    ============================================================ */
 @media(max-width:560px){
   html[data-ui] .ruang-obrol,
   html[data-ui][data-chat-size] .ruang-obrol{--av:25px;--av-gap:7px}
   html[data-ui][data-chat-size="kecil"] .ruang-obrol{--av:21px;--av-gap:6px}
   html[data-ui="japandi"] .ruang-obrol .ruang-kepala,
-  html[data-ui="hanami"] .ruang-obrol .ruang-kepala{padding:16px 18px}
+  html[data-ui="hanami"] .ruang-obrol .ruang-kepala,
+  html[data-ui="shinkai"] .ruang-obrol .ruang-kepala{padding:16px 18px}
   html[data-ui="japandi"] .ruang-obrol .komposer,
-  html[data-ui="hanami"] .ruang-obrol .komposer{padding:12px 14px}
+  html[data-ui="hanami"] .ruang-obrol .komposer,
+  html[data-ui="shinkai"] .ruang-obrol .komposer{padding:12px 14px}
   html[data-ui="japandi"] .ruang-obrol .komposer .btn,
-  html[data-ui="hanami"] .ruang-obrol .komposer .btn{width:44px;min-height:44px;height:44px}
+  html[data-ui="hanami"] .ruang-obrol .komposer .btn,
+  html[data-ui="shinkai"] .ruang-obrol .komposer .btn{width:44px;min-height:44px;height:44px}
   html[data-ui="japandi"] .ruang-obrol .obrol-lencana,
-  html[data-ui="hanami"] .ruang-obrol .obrol-lencana{width:34px;height:34px}
+  html[data-ui="hanami"] .ruang-obrol .obrol-lencana,
+  html[data-ui="shinkai"] .ruang-obrol .obrol-lencana{width:34px;height:34px}
   html[data-ui="klasik"] .ruang-obrol{box-shadow:4px 4px 0 color-mix(in srgb,var(--ink) 9%,transparent)}
 }
 @media(prefers-reduced-motion:reduce){
   .ruang-obrol *,.ruang-obrol *::before,.ruang-obrol *::after{animation:none!important}
 }
+
+/* ============================================================
+   r34 FIX ALIGNMENT (versi kuat, HARUS paling akhir file).
+   Spacer avatar (`.avatar-pesan.kosong`) kebagian nama class
+   `.kosong` yang di GLOBALS + tiap tema dipake buat styling
+   KOTAK EMPTY-STATE ("Belum ada yang ngomong") — termasuk
+   padding 56/48px 24px + border dashed. Karena box-sizing
+   border-box, padding+border ny NIMPA width/height var(--av),
+   jadi spacer ny bengkak 18-20px lebih lebar dari avatar asli
+   → gelembung pesan lawan di tengah grup GA SEJAJAR sama baris
+   terakhir grup ny (yang avatarnya keliatan).
+   Rule reset di seksi 0 (spesifisitas 0,3,0) kalah sama rule
+   empty-state per-tema `html[data-ui] .ruang-obrol .kosong`
+   (0,3,1) yang muncul belakangan — makany versi ini dipasang
+   PALING AKHIR: spesifisitas sama, cascade menang. Berlaku buat
+   semua tema sekaligus (klasik, swiss, japandi, hanami, shinkai).
+   Empty-state box ny sendiri GAK tersentuh (selector ny milih
+   .avatar-pesan.kosong doang). */
+html[data-ui] .ruang-obrol .avatar-pesan.kosong,
+.ruang-obrol .avatar-pesan.kosong{visibility:hidden;padding:0;border:0}

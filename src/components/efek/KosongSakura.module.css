@@ -1,0 +1,132 @@
+.root {
+  display: grid;
+  justify-items: start;
+  gap: 1rem;
+  max-width: 34rem;
+  padding-block: clamp(2rem, 8vh, 5rem);
+}
+
+.gambar {
+  width: min(100%, 22rem);
+  height: auto;
+  overflow: visible;
+  color: var(--ranting, #7b5e58);
+}
+
+.goyang {
+  transform-origin: 0 0;
+  animation: goyang 9s ease-in-out infinite alternate;
+}
+
+.kayu {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: gambar 1.6s cubic-bezier(0.45, 0.05, 0.25, 1) forwards;
+}
+
+.mekar {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  transform: scale(0);
+  animation: mekar 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.kelopak {
+  fill: var(--sakura-pucat, #fbdce5);
+  stroke: var(--sakura-tua, #d6849f);
+  stroke-width: 0.5;
+}
+
+.putik {
+  fill: var(--sakura-tua, #d6849f);
+}
+
+.jatuh {
+  fill: var(--sakura, #eba9bc);
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+}
+
+.jatuhA {
+  animation: jatuh 8s ease-in 3.2s infinite;
+}
+
+.jatuhB {
+  animation: jatuh 10s ease-in 6.4s infinite;
+}
+
+.judul {
+  margin: 0.5rem 0 0;
+  font: inherit;
+  font-size: 1.25rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.keterangan {
+  margin: 0;
+  max-width: 38ch;
+  line-height: 1.6;
+  color: var(--muted, color-mix(in srgb, currentColor 65%, transparent));
+}
+
+.aksi {
+  margin-top: 0.5rem;
+}
+
+@keyframes gambar {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes mekar {
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes goyang {
+  from {
+    transform: rotate(-0.6deg);
+  }
+  to {
+    transform: rotate(0.6deg);
+  }
+}
+
+@keyframes jatuh {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  12% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-26px, 68px) rotate(170deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .goyang,
+  .kayu,
+  .mekar {
+    animation: none;
+  }
+  .kayu {
+    stroke-dashoffset: 0;
+  }
+  .mekar {
+    transform: none;
+  }
+  .jatuh {
+    display: none;
+  }
+}

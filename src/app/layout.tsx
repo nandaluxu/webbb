@@ -9,20 +9,25 @@ import "./swiss-zen.css";
 import "./japandi.css";
 /* Tema Hanami Minimalism: lapisan keempat, scope html[data-ui="hanami"]. */
 import "./hanami.css";
+/* Tema Shinkai-core (r34): lapisan kelima — langit sinematik anime,
+   kaca jendela kereta, parallax awan + burung. Scope
+   html[data-ui="shinkai"]. */
+import "./shinkai.css";
 /* Ruang Obrol: lapisan tema obrolan (klasik enhanced, Swiss, Japandi,
-   Hanami). Scope .ruang-obrol + html[data-ui]. */
+   Hanami, Shinkai). Scope .ruang-obrol + html[data-ui]. */
 import "./ruang-obrol.css";
 /* Permainan: tema game Tic Tac Toe + 2048 dan dropdown PilihOpsi
-   (Swiss, Japandi, Hanami). Dimuat PALING AKHIR biar nimpa detail
-   brutalis globals (kertas titik, bayangan keras) di gaya lain. */
+   (Swiss, Japandi, Hanami, Shinkai). Dimuat PALING AKHIR biar nimpa
+   detail brutalis globals (kertas titik, bayangan keras) di gaya lain. */
 import "./permainan.css";
 /* Akinator: layout + bentuk halaman Akinator per gaya UI (Swiss, Japandi,
-   Hanami). Dimuat PALING AKHIR biar nimpa blok .aki-* klasik di globals.
+   Hanami, Shinkai). Dimuat PALING AKHIR biar nimpa blok .aki-* klasik di globals.
    Scope html[data-ui="..."], jadi Klasik gak tersentuh. */
 import "./akinator-tema.css";
 /* Chat pribadi (r32): tema panel obrolan teman ala WhatsApp (klasik
-   enhanced, Swiss hairline, Japandi linen, Hanami sakura). Scope
-   .cp-* + html[data-ui], dimuat paling akhir — alasan ny sama. */
+   enhanced, Swiss hairline, Japandi linen, Hanami sakura, Shinkai
+   kaca langit). Scope .cp-* + html[data-ui], dimuat paling akhir —
+   alasan ny sama. */
 import "./chat-pribadi.css";
 import Kerangka from "@/components/Kerangka";
 
@@ -39,7 +44,7 @@ export const viewport: Viewport = {
 };
 
 /* Pasang tema + gaya UI + ukuran chat sebelum render biar gak kedip pas pertama buka. */
-const skripTema = `(function(){try{var t=localStorage.getItem('neyhra:tema');if(t!=='gelap'&&t!=='terang'){t=matchMedia('(prefers-color-scheme: dark)').matches?'gelap':'terang';}document.documentElement.dataset.tema=t;var g=localStorage.getItem('neyhra:ui');document.documentElement.dataset.ui=(g==='swiss'||g==='japandi'||g==='hanami')?g:'klasik';var u=localStorage.getItem('neyhra:ukuran-chat');if(u==='kecil'||u==='sedang'||u==='besar'){document.documentElement.dataset.chatSize=u;}}catch(e){document.documentElement.dataset.tema='terang';document.documentElement.dataset.ui='klasik';}})();`;
+const skripTema = `(function(){try{var t=localStorage.getItem('neyhra:tema');if(t!=='gelap'&&t!=='terang'){t=matchMedia('(prefers-color-scheme: dark)').matches?'gelap':'terang';}document.documentElement.dataset.tema=t;var g=localStorage.getItem('neyhra:ui');document.documentElement.dataset.ui=(g==='swiss'||g==='japandi'||g==='hanami'||g==='shinkai')?g:'klasik';var u=localStorage.getItem('neyhra:ukuran-chat');if(u==='kecil'||u==='sedang'||u==='besar'){document.documentElement.dataset.chatSize=u;}}catch(e){document.documentElement.dataset.tema='terang';document.documentElement.dataset.ui='klasik';}})();`;
 
 /* Anti-flicker: kursor custom baru jalan di perangkat pointer halus. */
 const gayaKursor = `@media (pointer: fine){html,body,*,*::before,*::after{cursor:none !important;}}`;

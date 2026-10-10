@@ -1874,9 +1874,12 @@ a.sisa-user:hover,a.sisa-user:focus-visible{background:var(--hair)}
 
 /* ---------- Touch: long-press butuh teks yang gak ke-select ----------
    (r34) daftar email AM Prem + item riwayat edit gambar ikut:
-   target menu aksi tahan/klik-kanan yang baru. */
+   target menu aksi tahan/klik-kanan yang baru. (r34b) gelembung
+   chat pribadi ikut — udah punya menu aksi tahan kayak ruang
+   obrolan, jadi seleksi teks ny dimatiin biar menu ny gak
+   keduluan callout/selection bawaan HP. */
 @media (hover:none){
-  .gelembung,.pk-baris,.amv2-aksi-akun .btn,.eg-riwayat-item{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+  .gelembung,.pk-baris,.amv2-aksi-akun .btn,.eg-riwayat-item,.cp-gelembung{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
 }
 
 /* ---------- AM Premium Generator (r17) ----------

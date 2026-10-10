@@ -74,18 +74,27 @@ model Pengguna {
 // Index ganda (dariId,keId,waktu) + (keId,waktu) biar dua pola
 // query utama (riwayat satu pasangan + daftar belum-baca) dua-
 // duany murah di SQLite.
+// r33: balasanId = pesan pribadi yang di-QUOTE (mirip balasan di
+// chat global, tapi versi pribadi). Snapshot nama pengirim ny gak
+// perlu disimpen — relasi ny cuma dua orang, cukup bandingin
+// balasan.dariId sama lawan.id buat tau "Lu" atau nama temen ny.
+// Validasi ny di route: balasan wajib pesan di PASANGAN yang sama.
 model PesanPribadi {
-  id     String   @id @default(cuid())
-  dariId String
-  dari   Pengguna @relation("PvDari", fields: [dariId], references: [id], onDelete: Cascade)
-  keId   String
-  ke     Pengguna @relation("PvKe", fields: [keId], references: [id], onDelete: Cascade)
-  teks   String
-  baca   DateTime?
-  waktu  DateTime @default(now())
+  id        String         @id @default(cuid())
+  dariId    String
+  dari      Pengguna       @relation("PvDari", fields: [dariId], references: [id], onDelete: Cascade)
+  keId      String
+  ke        Pengguna       @relation("PvKe", fields: [keId], references: [id], onDelete: Cascade)
+  teks      String
+  baca      DateTime?
+  waktu     DateTime       @default(now())
+  balasanId String?
+  balasan   PesanPribadi?  @relation("BalasanPv", fields: [balasanId], references: [id])
+  dibalas   PesanPribadi[] @relation("BalasanPv")
 
   @@index([dariId, keId, waktu])
   @@index([keId, waktu])
+  @@index([balasanId])
 }
 
 // Relasi follow (r27): user A (pengikut) nge-follow user B (diikuti).

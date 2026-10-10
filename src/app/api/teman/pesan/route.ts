@@ -4,7 +4,10 @@ import { bacaSesi } from "@/lib/autentikasi";
 
 /* /api/teman/pesan (r32): obrolan pribadi sama SATU teman.
    Kunci ruang realtime (harus sama kayak mini-service obrolan):
-   "pv:" + dua id ke-sort. */
+   "pv:" + dua id ke-sort.
+   r33: dukung QUOTE (balasanId) — pola ny sama kayak /api/chat,
+   tapi balasan ny wajib pesan di pasangan yang sama (dari/ke dua
+   arah), divalidasi server biar gak bisa nyasar quote obrolan laen. */
 
 export const runtime = "nodejs";
 
@@ -31,6 +34,15 @@ async function umpanBaca(sayaId: string, lawanId: string) {
 const BATCH = 30;
 const PANJANG_TEKS = 2000;
 
+/* Kolom pesan yang di-QUOTE yang diambil (nama pengirim gak perlu
+   disnapshot — tinggal bandingin dariId sama lawan.id di client). */
+const PILIH_BALASAN = {
+  id: true,
+  teks: true,
+  waktu: true,
+  dariId: true,
+} as const;
+
 type PesanKirim = {
   id: string;
   teks: string;
@@ -39,6 +51,7 @@ type PesanKirim = {
   keId: string;
   baca: string | null;
   klienId?: string;
+  balasan: { id: string; teks: string; waktu: string; dariId: string } | null;
 };
 
 function susun(p: {
@@ -49,6 +62,7 @@ function susun(p: {
   keId: string;
   baca: Date | null;
   klienId?: string;
+  balasan: { id: string; teks: string; waktu: Date; dariId: string } | null;
 }): PesanKirim {
   return {
     id: p.id,
@@ -58,6 +72,9 @@ function susun(p: {
     keId: p.keId,
     baca: p.baca ? p.baca.toISOString() : null,
     ...(p.klienId ? { klienId: p.klienId } : {}),
+    balasan: p.balasan
+      ? { id: p.balasan.id, teks: p.balasan.teks, waktu: p.balasan.waktu.toISOString(), dariId: p.balasan.dariId }
+      : null,
   };
 }
 
@@ -113,6 +130,7 @@ export async function GET(req: NextRequest) {
         },
         orderBy: { waktu: "asc" },
         take: 100,
+        include: { balasan: { select: PILIH_BALASAN } },
       });
       /* Pesan baru dari dia = langsung ditandain dibaca (dia lagi
          buka obrolanny juga). */
@@ -137,6 +155,7 @@ export async function GET(req: NextRequest) {
     },
     orderBy: { waktu: "desc" },
     take: BATCH + 1,
+    include: { balasan: { select: PILIH_BALASAN } },
   });
   const lagi = ambil.length > BATCH;
   const pesan = (lagi ? ambil.slice(0, BATCH) : ambil).slice().reverse();
@@ -155,8 +174,11 @@ export async function GET(req: NextRequest) {
 }
 
 /* ---------- POST: kirim pesan ----------
-   { dengan, teks, klienId? } — WAJIB masih teman (mutual follow);
-   bukan teman = 403 (galat ny manusiawi, UI ngarahin ke profil).
+   { dengan, teks, klienId?, balasanId? } — WAJIB masih teman (mutual
+   follow); bukan teman = 403 (galat ny manusiawi, UI ngarahin ke
+   profil). balasanId = id pesan yang di-quote (r33); wajib pesan di
+   PASANGAN obrolan yang sama — quote nyasar otomatis dibuang (jadi
+   pesan biasa), bukan ditolak (pengirim gak perlu tau detail ny).
    { dengan, aksi: "baca" } — tandain pesan dari dia jadi udah
    kebaca (dipake pas pesan baru nyampe lewat socket pas obrolanny
    lagi kebuka: tanpa ini, pesanny kebaca di layar tapi angka belum-
@@ -165,7 +187,7 @@ export async function POST(req: Request) {
   const sesi = await bacaSesi();
   if (!sesi) return NextResponse.json({ galat: "Login dulu." }, { status: 401 });
 
-  let badan: { dengan?: unknown; teks?: unknown; klienId?: unknown; aksi?: unknown };
+  let badan: { dengan?: unknown; teks?: unknown; klienId?: unknown; aksi?: unknown; balasanId?: unknown };
   try {
     badan = await req.json();
   } catch {
@@ -207,8 +229,28 @@ export async function POST(req: Request) {
     );
   }
 
+  /* r33: validasi quote — pesan yang dibalas HARUS milik pasangan
+     obrolan ini (dua arah). Ini juga pagar privasi: id pesan dari
+     obrolan laen gak bakal nyambung. Gak ketemu/gak sah = pesan
+     tetep kesimpen sebagai pesan biasa (tanpa quote). */
+  let balasanId: string | null = null;
+  const mintaBalasan = typeof badan.balasanId === "string" && badan.balasanId ? badan.balasanId : null;
+  if (mintaBalasan) {
+    const b = await db.pesanPribadi.findUnique({
+      where: { id: mintaBalasan },
+      select: { id: true, dariId: true, keId: true },
+    });
+    if (
+      b &&
+      ((b.dariId === sesi.id && b.keId === lawan.id) || (b.dariId === lawan.id && b.keId === sesi.id))
+    ) {
+      balasanId = b.id;
+    }
+  }
+
   const p = await db.pesanPribadi.create({
-    data: { dariId: sesi.id, keId: lawan.id, teks },
+    data: { dariId: sesi.id, keId: lawan.id, teks, balasanId },
+    include: { balasan: { select: PILIH_BALASAN } },
   });
   const pesan = susun({ ...p, klienId });
 

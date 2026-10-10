@@ -85,6 +85,7 @@
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .cp-kotak.belum .cp-kotak-cuplik{color:var(--ink);font-weight:500}
+/* (aksen strip kiri buat belum-baca ada di seksi r33 bawah) */
 .cp-badge{
   flex:none;min-width:20px;height:20px;padding:0 6px;border-radius:999px;
   display:inline-flex;align-items:center;justify-content:center;
@@ -165,6 +166,117 @@
 }
 .cp-cek{display:inline-flex;align-items:center}
 .cp-cek svg + svg{margin-left:-4px}
+
+/* ---------- r33: balas / quote ----------
+   Tombol balas: nempel ABSOLUTE di sisi bebas baris (kanan buat
+   pesan dia, kiri buat pesan sendiri — persis slot .baris-pesan
+   di ruang obrolan), jadi gak pernah nimpa gelembung DAN gak
+   nggeser anchor pas muncul. Nongol pas hover/fokus baris
+   (desktop) atau pas lagi nggeser (HP). */
+.cp-m{position:relative}
+.cp-gelembung{position:relative;transition:transform .25s var(--ease)}
+.cp-m.menggeser .cp-gelembung{transition:none}
+.cp-gelembung,.cp-tombol-balas{touch-action:pan-y}
+.cp-tombol-balas{
+  position:absolute;bottom:2px;width:32px;height:32px;
+  display:inline-flex;align-items:center;justify-content:center;
+  color:var(--muted);background:var(--bg);border:1px solid var(--hair);
+  border-radius:8px;cursor:pointer;
+  opacity:0;pointer-events:none;
+  transition:opacity .2s ease,color .2s,border-color .2s,transform .2s var(--ease);
+}
+.cp-m:not(.sendiri) .cp-tombol-balas{right:6px}
+.cp-m.sendiri .cp-tombol-balas{left:6px}
+.cp-m:hover .cp-tombol-balas,
+.cp-m:focus-within .cp-tombol-balas,
+.cp-m.menggeser .cp-tombol-balas{opacity:1;pointer-events:auto}
+.cp-tombol-balas:hover,.cp-tombol-balas:focus-visible{color:var(--ink);border-color:var(--ink);transform:translateY(-2px);outline:0}
+.cp-tombol-balas svg{pointer-events:none}
+
+/* ---------- r34: menu aksi (tahan / klik kanan) ----------
+   Menu nyself udah kestyling global (.menu-aksi di globals.css,
+   dipake bareng sama ruang obrolan + komentar) — yang perlu
+   disetel di sini cuma Z-INDEX: .cp-lapis 420 > .menu-aksi 400,
+   jadi tanpa ini menu ny kekubur di belakang panel. */
+.cp-lapis .menu-aksi{z-index:430}
+
+/* Kabar singkat (contoh: "Pesan tersalin") — pil kecil di dasar
+   panel, di atas semua pane. Muncul-hilang dikendaliin React
+   (2.4 detik), CSS cuma ngatur posisi + animasi masuk. */
+.cp-kabar{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:431;
+  margin:0;padding:7px 16px;max-width:82%;
+  font-size:.82rem;font-weight:600;letter-spacing:.01em;text-align:center;
+  color:var(--ink);background:var(--bg);border:1px solid var(--ink);
+  border-radius:999px;box-shadow:4px 4px 0 color-mix(in srgb,var(--ink) 16%,transparent);
+  animation:cp-kabar-masuk .18s var(--ease);
+}
+@keyframes cp-kabar-masuk{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
+
+/* Chip quote di dalem gelembung: warna ny nurut currentColor
+   (ikutin warna TEKS gelembung), jadi kontras ny aman otomatis
+   di gelembung sendiri (tinta penuh) maupun punya lawan.
+   1 baris via CSS ellipsis doang — teks asli gak dipotong JS. */
+.cp-balas-konteks{
+  display:block;margin:1px 0 6px;max-width:100%;padding:4px 10px;
+  border:0;border-left:2px solid currentColor;border-radius:0 6px 6px 0;
+  background:color-mix(in srgb,currentColor 8%,transparent);
+  font:inherit;font-size:.76rem;line-height:1.45;color:inherit;opacity:.78;
+  cursor:pointer;text-align:left;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  transition:opacity .2s,background .2s;
+}
+.cp-balas-konteks b{font-weight:700;color:inherit}
+.cp-balas-konteks:hover,.cp-balas-konteks:focus-visible{opacity:1;background:color-mix(in srgb,currentColor 14%,transparent);outline:0}
+
+/* Bar balasan di atas komposer: 2 baris — label "Membalas <nama>"
+   + tombol batal, terus cuplikan quote 1 baris. */
+.cp-balas-bar{
+  flex:none;display:flex;flex-direction:column;gap:1px;
+  padding:8px 14px 7px;border-top:1px solid var(--hair);
+  background:var(--kilau);min-width:0;
+  animation:cp-balas-masuk .18s var(--ease);
+}
+@keyframes cp-balas-masuk{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.cp-balas-bar{animation:none}}
+.cp-balas-bar-atas{display:flex;align-items:center;gap:8px;min-width:0}
+.cp-balas-bar-label{flex:1;min-width:0;font-size:.76rem;font-weight:500;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cp-balas-bar-label b{color:var(--ink);font-weight:700}
+.cp-balas-bar-tutup{flex:none;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;margin:-4px -8px -4px 0;color:var(--muted);background:none;border:0;cursor:pointer;transition:color .2s}
+.cp-balas-bar-tutup:hover,.cp-balas-bar-tutup:focus-visible{color:var(--ink);outline:0}
+.cp-balas-bar-teks{margin:0;font-size:.8rem;line-height:1.4;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Sorot pas lompat ke pesan yang di-quote: cincin currentColor
+   kedip 2x (bukan box-shadow — nggak bentrok sama bayangan tema
+   klasik yang offset). */
+.cp-m.sorot .cp-gelembung::after{
+  content:"";position:absolute;inset:-5px;border-radius:inherit;
+  border:2px solid currentColor;opacity:0;pointer-events:none;
+  animation:cp-sorot 1.3s ease 2;
+}
+@keyframes cp-sorot{0%,100%{opacity:0}45%{opacity:.5}}
+@media(prefers-reduced-motion:reduce){.cp-m.sorot .cp-gelembung::after{animation:none;opacity:.5}}
+
+/* ---------- r33 polish ---------- */
+/* Gelembung nongol halus — cuma pas elemen BARU mount (React
+   gak nyentuh yang lama, key=id), jadi pas load awal gerombolan
+   gelembung masuk serempak halus, pesan baru ny meluncur dikit. */
+.cp-gelembung{animation:cp-gelembung-muncul .3s var(--ease)}
+@keyframes cp-gelembung-muncul{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.cp-gelembung{animation:none}}
+
+/* Scrollbar tipis nurut tema (default browser gede + nabrak gaya). */
+.cp-daftar-isi,.cp-area{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--ink) 25%,transparent) transparent}
+.cp-daftar-isi::-webkit-scrollbar,.cp-area::-webkit-scrollbar{width:8px}
+.cp-daftar-isi::-webkit-scrollbar-thumb,.cp-area::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--ink) 22%,transparent);border-radius:999px;border:2px solid transparent;background-clip:padding-box}
+.cp-daftar-isi::-webkit-scrollbar-thumb:hover,.cp-area::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--ink) 38%,transparent);border:2px solid transparent;background-clip:padding-box}
+
+/* Kotak belum-baca: aksen strip tipis di kiri + cuplikan tebal
+   (yang udah ada), biar nyolok tanpa ribet. */
+.cp-kotak.belum{box-shadow:inset 3px 0 0 var(--ink)}
+
+/* Area kosong: pil lembut di tengah (sebelumnya teks nungging doang). */
+.cp-area-kosong{margin:auto;padding:10px 18px;border-radius:999px;background:var(--kilau);color:var(--muted);font-size:.85rem}
 
 /* Indikator nulis. */
 .cp-gelembung-menulis{display:inline-flex;padding:12px 14px}
@@ -272,6 +384,12 @@ html[data-ui="klasik"] .cp-lawan:hover,html[data-ui="klasik"] .cp-lawan:focus-vi
 html[data-ui="klasik"] .cp-panel-tamu{border:2px solid var(--ink)}
 html[data-ui="klasik"] .sisa-nav .sisa-badge{border-radius:0}
 html[data-ui="klasik"] .profil-teman{border-radius:0;border-style:solid;box-shadow:2px 2px 0 color-mix(in srgb,var(--ink) 14%,transparent)}
+/* r33 quote: kotak penuh + bayangan offset. */
+html[data-ui="klasik"] .cp-tombol-balas{border-radius:0;border-width:2px;border-color:var(--ink);box-shadow:2px 2px 0 color-mix(in srgb,var(--ink) 18%,transparent)}
+html[data-ui="klasik"] .cp-tombol-balas:hover,html[data-ui="klasik"] .cp-tombol-balas:focus-visible{transform:translate(-1px,-1px);box-shadow:3px 3px 0 color-mix(in srgb,var(--ink) 22%,transparent)}
+html[data-ui="klasik"] .cp-balas-konteks{border-left-width:3px;border-radius:0}
+html[data-ui="klasik"] .cp-balas-bar{border-top:2px solid var(--ink);border-left:6px solid var(--ink);padding-left:12px}
+html[data-ui="klasik"] .cp-area-kosong{border-radius:0;border:1px solid var(--ink);color:var(--ink);background:var(--bg)}
 
 
 /* ============================================================
@@ -304,6 +422,14 @@ html[data-ui="swiss"] .cp-lawan-nama b{font-weight:500;letter-spacing:.02em}
 html[data-ui="swiss"] .cp-panel-tamu{border:0;border-top:2px solid var(--ink)}
 html[data-ui="swiss"] .sisa-nav .sisa-badge{border-radius:0}
 html[data-ui="swiss"] .profil-teman{border-radius:0;border-style:solid;border-width:1px}
+/* r33 quote: hairline, datar, kapital. */
+html[data-ui="swiss"] .cp-tombol-balas{border-radius:0;border:var(--garis-tipis)}
+html[data-ui="swiss"] .cp-tombol-balas:hover,html[data-ui="swiss"] .cp-tombol-balas:focus-visible{transform:none;box-shadow:none;background:var(--kilau)}
+html[data-ui="swiss"] .cp-balas-konteks{border-left-width:1px;border-radius:0}
+html[data-ui="swiss"] .cp-balas-bar{background:transparent;border-top:var(--garis-tipis);border-left:2px solid var(--ink)}
+html[data-ui="swiss"] .cp-balas-bar-label{letter-spacing:.05em;text-transform:uppercase}
+html[data-ui="swiss"] .cp-balas-bar-teks{letter-spacing:.02em}
+html[data-ui="swiss"] .cp-area-kosong{border-radius:0;border-top:var(--garis-tipis);border-bottom:var(--garis-tipis);background:transparent;letter-spacing:.08em;text-transform:uppercase;font-size:.72rem}
 
 
 /* ============================================================
@@ -335,6 +461,14 @@ html[data-ui="japandi"] .cp-panel-tamu{border-radius:var(--r-besar);border-color
 html[data-ui="japandi"] .cp-kosong-ikon{color:var(--lumut)}
 html[data-ui="japandi"] .profil-teman{border-color:var(--hair);border-style:solid;border-radius:999px}
 html[data-ui="japandi"] .sisa-nav .sisa-badge{background:var(--lumut);color:var(--permukaan)}
+/* r33 quote: pil lembut + lumot. */
+html[data-ui="japandi"] .cp-tombol-balas{border-radius:50%;border-color:transparent;background:var(--kilau);color:var(--lumut)}
+html[data-ui="japandi"] .cp-tombol-balas:hover,html[data-ui="japandi"] .cp-tombol-balas:focus-visible{background:var(--lumut);color:var(--permukaan);border-color:transparent}
+html[data-ui="japandi"] .cp-balas-konteks{border-radius:0 8px 8px 0}
+html[data-ui="japandi"] .cp-balas-bar{border-top:1px solid var(--hair);border-left:3px solid var(--lumut);background:var(--kilau)}
+html[data-ui="japandi"] .cp-balas-bar-tutup:hover,html[data-ui="japandi"] .cp-balas-bar-tutup:focus-visible{color:var(--lumut)}
+html[data-ui="japandi"] .cp-area-kosong{border-radius:999px}
+html[data-ui="japandi"] .cp-kotak.belum{box-shadow:inset 3px 0 0 var(--lumut)}
 
 
 /* ============================================================
@@ -375,7 +509,70 @@ html[data-ui="hanami"] .cp-panel-tamu{border-radius:var(--r-besar);border-color:
 html[data-ui="hanami"] .cp-kosong-ikon{color:var(--sakura-tua)}
 html[data-ui="hanami"] .profil-teman{border-color:var(--sakura-tua);border-style:solid;border-radius:10px 2px 10px 2px}
 html[data-ui="hanami"] .sisa-nav .sisa-badge{background:var(--sakura-tua);color:#3B3036}
+/* r33 quote: sudut kelopak + rona sakura. */
+html[data-ui="hanami"] .cp-tombol-balas{border-radius:12px 3px 12px 3px;border-color:var(--hair);background:var(--permukaan)}
+html[data-ui="hanami"] .cp-tombol-balas:hover,html[data-ui="hanami"] .cp-tombol-balas:focus-visible{border-color:var(--sakura);background:color-mix(in srgb,var(--sakura) 20%,var(--permukaan));color:var(--ink)}
+html[data-ui="hanami"] .cp-balas-konteks{border-radius:0 10px 2px 10px 0}
+html[data-ui="hanami"] .cp-balas-bar{border-top:1px solid var(--hair);border-left:3px solid var(--sakura);background:color-mix(in srgb,var(--sakura) 10%,transparent)}
+html[data-ui="hanami"] .cp-balas-bar-label b{color:var(--sakura-tua)}
+html[data-ui="hanami"] .cp-balas-bar-tutup:hover,html[data-ui="hanami"] .cp-balas-bar-tutup:focus-visible{color:var(--sakura-tua)}
+html[data-ui="hanami"] .cp-area-kosong{border-radius:10px 2px 10px 2px;background:color-mix(in srgb,var(--sakura) 16%,var(--permukaan))}
+html[data-ui="hanami"] .cp-kotak.belum{box-shadow:inset 3px 0 0 var(--sakura-tua)}
 
 /* Hanami gelap: kaca tint ny perlu dibedain dari bg (bg ny gelap
    banget) biar panel ny masih kebaca batas ny. */
 html[data-ui="hanami"][data-tema="gelap"] .cp-panel{background:color-mix(in srgb,var(--permukaan) 92%,transparent)}
+
+
+/* ============================================================
+   SHINKAI (r34) — kaca jendela kereta di depan langit sinematik.
+   Panel kaca blur, gelembung sudut awan, aksen biru langit +
+   emas matahari. Token ny dari shinkai.css.
+   ============================================================ */
+html[data-ui="shinkai"] .cp-panel{
+  border-radius:var(--r-besar);border-color:var(--hair);
+  background:color-mix(in srgb,var(--permukaan) 84%,transparent);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  box-shadow:0 30px 60px -40px color-mix(in srgb,var(--langit-tua) 60%,transparent);
+  overflow:hidden;
+}
+html[data-ui="shinkai"] .cp-kepala{border-bottom:1px solid var(--hair);background:color-mix(in srgb,var(--langit) 12%,transparent)}
+html[data-ui="shinkai"] .cp-kepala h2{font-family:var(--font-judul);font-weight:500;letter-spacing:.03em;font-size:1.08rem}
+html[data-ui="shinkai"] .cp-daftar{border-right:1px solid var(--hair);background:transparent}
+html[data-ui="shinkai"] .cp-ava{border-radius:50%;border-color:var(--hair)}
+html[data-ui="shinkai"] .cp-ava[data-w="1"]{background:var(--langit-tua);color:#FFF}
+html[data-ui="shinkai"] .cp-ava[data-w="3"]{background:color-mix(in srgb,var(--matahari) 30%,var(--permukaan))}
+html[data-ui="shinkai"] .cp-kotak{border-bottom:1px solid var(--hair)}
+html[data-ui="shinkai"] .cp-kotak:hover,html[data-ui="shinkai"] .cp-kotak:focus-visible{background:color-mix(in srgb,var(--langit) 12%,transparent);transform:none;box-shadow:none}
+html[data-ui="shinkai"] .cp-kotak.aktif{background:color-mix(in srgb,var(--langit) 18%,transparent)}
+/* Gelembung: sudut awan — sisi dalam ny lancip dikit. */
+html[data-ui="shinkai"] .cp-gelembung{
+  border-radius:6px 18px 18px 18px;border-color:var(--hair);
+  background:color-mix(in srgb,var(--permukaan) 94%,transparent);
+}
+html[data-ui="shinkai"] .cp-m.sendiri .cp-gelembung{background:var(--langit-tua);border-color:var(--langit-tua);color:#FFF}
+html[data-ui="shinkai"] .cp-pemisah span{background:color-mix(in srgb,var(--permukaan) 76%,transparent);color:var(--muted);border-radius:999px;font-weight:500}
+html[data-ui="shinkai"] .cp-komposer{border-top:1px solid var(--hair);background:color-mix(in srgb,var(--langit) 7%,var(--permukaan))}
+html[data-ui="shinkai"] .cp-komposer textarea{border-radius:22px;border-color:var(--hair);background:var(--permukaan)}
+html[data-ui="shinkai"] .cp-komposer textarea:focus-visible{transform:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--langit) 28%,transparent);border-color:var(--langit-tua)}
+html[data-ui="shinkai"] .cp-kirim{border-radius:50%;border-color:transparent;background:var(--langit-tua);color:#FFF}
+html[data-ui="shinkai"] .cp-kirim:hover,html[data-ui="shinkai"] .cp-kirim:focus-visible{transform:none;background:var(--langit);color:#FFF}
+html[data-ui="shinkai"] .cp-balik{border-radius:50%;border-color:var(--hair)}
+html[data-ui="shinkai"] .cp-lawan:hover,html[data-ui="shinkai"] .cp-lawan:focus-visible{background:color-mix(in srgb,var(--langit) 12%,transparent);box-shadow:none;border-radius:var(--r)}
+html[data-ui="shinkai"] .cp-lawan-nama b{font-family:var(--font-judul);font-weight:500}
+html[data-ui="shinkai"] .cp-titik i{background:var(--langit-tua)}
+html[data-ui="shinkai"] .cp-panel-tamu{border-radius:var(--r-besar);border-color:var(--hair);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+html[data-ui="shinkai"] .cp-kosong-ikon{color:var(--langit-tua)}
+html[data-ui="shinkai"] .profil-teman{border-color:var(--langit-tua);border-style:solid;border-radius:14px 22px 14px 22px}
+html[data-ui="shinkai"] .sisa-nav .sisa-badge{background:var(--langit-tua);color:#FFF}
+/* r33/r34 quote + menu: pil kaca + aksen langit. */
+html[data-ui="shinkai"] .cp-tombol-balas{border-radius:50%;border-color:var(--hair);background:var(--permukaan)}
+html[data-ui="shinkai"] .cp-tombol-balas:hover,html[data-ui="shinkai"] .cp-tombol-balas:focus-visible{border-color:var(--langit);background:color-mix(in srgb,var(--langit) 18%,var(--permukaan));color:var(--ink)}
+html[data-ui="shinkai"] .cp-balas-konteks{border-radius:2px 12px 12px 2px}
+html[data-ui="shinkai"] .cp-balas-bar{border-top:1px solid var(--hair);border-left:3px solid var(--langit-tua);background:color-mix(in srgb,var(--langit) 10%,transparent)}
+html[data-ui="shinkai"] .cp-balas-bar-label b{color:var(--langit-tua)}
+html[data-ui="shinkai"] .cp-balas-bar-tutup:hover,html[data-ui="shinkai"] .cp-balas-bar-tutup:focus-visible{color:var(--langit-tua)}
+html[data-ui="shinkai"] .cp-area-kosong{border-radius:var(--r);background:color-mix(in srgb,var(--langit) 12%,transparent)}
+html[data-ui="shinkai"] .cp-kotak.belum{box-shadow:inset 3px 0 0 var(--matahari)}
+/* Kabar salin (r34): pil kaca. */
+html[data-ui="shinkai"] .cp-kabar{border-radius:999px;background:color-mix(in srgb,var(--permukaan) 92%,transparent);box-shadow:0 14px 30px -14px color-mix(in srgb,var(--langit-tua) 55%,transparent)}

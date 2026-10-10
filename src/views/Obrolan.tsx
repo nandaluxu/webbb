@@ -133,6 +133,19 @@ function HiasTema() {
           <circle className="putik" r="3.4" />
         </g>
       </svg>
+      {/* r34 Shinkai: matahari + awan cumulus + sepasang burung
+          siluet — bahasa visual langit sinematik. */}
+      <svg className="hias hias-shinkai" viewBox="0 0 64 64" aria-hidden="true">
+        <circle className="matahari-hias" cx="46" cy="15" r="6.5" />
+        <g className="awan-hias">
+          <circle cx="20" cy="45" r="8.5" />
+          <circle cx="30" cy="40" r="12" />
+          <circle cx="41" cy="46" r="8" />
+          <rect x="12" y="45" width="37" height="8" rx="4" />
+        </g>
+        <path className="burung-hias" d="M10 17q3-3.4 6 0q3-3.4 6 0" />
+        <path className="burung-hias" d="M31 25q2.4-2.8 4.8 0q2.4-2.8 4.8 0" />
+      </svg>
     </>
   );
 }

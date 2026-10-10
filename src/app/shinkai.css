@@ -1,0 +1,244 @@
+/* ============================================================
+   Shinkai-core (Cinematic Anime Sky) — TEMA OPSIONAL ke-5.
+   Langit sinematik ala film anime modern: gradasi biru cerah
+   vibrant, awan cumulus besar, kawanan burung siluet, semburat
+   matahari hangat — semuany digambar di canvas parallax
+   (efek/LatarShinkai) yang gerak ngikutin scroll + pointer.
+   Permukaan UI ny "kaca jendela kereta": putih setengah bening
+   + blur, sudut membulat kayak awan, aksen biru langit + emas
+   matahari dipakai hemat. Tema gelap = "yozora" (langit malam
+   berbintang bercahaya bulan).
+
+   Dimuat SETELAH globals.css, swiss-zen.css, japandi.css,
+   hanami.css. SELURUH rule di-scope html[data-ui="shinkai"].
+   ============================================================ */
+
+html[data-ui="shinkai"]{
+  --bg:#E9F3FC;
+  --permukaan:#FFFFFF;
+  --kilau:#F1F8FE;
+  --ink:#17355B;
+  --muted:#3F618C;
+  --hair:#CFE3F4;
+  --tanda:#3A5C82;
+  /* Palet langit — dipake canvas LatarShinkai (langit, awan,
+     burung, matahari/bulan) + aksen UI ny. Bagian TENGAH sengaja
+     terang banget biar teks --ink/--muted di atasny tetap kontras. */
+  --langit:#8CC6F2;
+  --langit-tua:#3D8FD6;
+  --langit-pucat:#CFE9FB;
+  --matahari:#FFD166;
+  --senja:#FFB37A;
+  --awan-terang:#FFFFFF;
+  --awan-gelap:#A9CBE9;
+  --siluet:#22364E;
+  --r:16px 24px 16px 24px;
+  --r-besar:26px 32px 26px 32px;
+  --bayang:0 24px 60px -30px rgba(23,53,91,.4);
+  --ease:cubic-bezier(.3,.7,.3,1);
+  --lebar:1180px;
+  --ruang:clamp(22px,5vw,80px);
+  --font-judul:"Zen Maru Gothic","Zen Kaku Gothic New",Inter,system-ui,sans-serif;
+  --font-isi:"Zen Kaku Gothic New",Inter,"Noto Emoji Neyhra",system-ui,sans-serif;
+}
+html[data-ui="shinkai"][data-tema="gelap"]{
+  --bg:#0C1526;
+  --permukaan:#15233C;
+  --kilau:#1B2C4A;
+  --ink:#E4EEFA;
+  --muted:#8CA4C6;
+  --hair:#283B5C;
+  --tanda:#B6CBE6;
+  /* Yozora: indigo berbintang, awan kecima bulan. */
+  --langit:#1C3358;
+  --langit-tua:#13233F;
+  --langit-pucat:#2C4A75;
+  --matahari:#FFE49B;
+  --senja:#89A9D4;
+  --awan-terang:#3D5878;
+  --awan-gelap:#1D3050;
+  --siluet:#0A1526;
+  --bayang:0 24px 60px -30px rgba(0,0,0,.7);
+}
+
+html[data-ui="shinkai"]{scroll-behavior:smooth;text-rendering:optimizeLegibility}
+html[data-ui="shinkai"] body{
+  font-family:var(--font-isi);font-weight:400;line-height:1.85;letter-spacing:.015em;
+  padding:clamp(20px,3vw,36px) var(--ruang) 48px;
+}
+html[data-ui="shinkai"] ::selection{background:color-mix(in srgb,var(--langit) 40%,transparent);color:var(--ink)}
+html[data-ui="shinkai"] :focus-visible{outline:2px solid var(--langit-tua);outline-offset:3px;border-radius:6px}
+/* Gradien langit butuh piksel halus — pixelated bikin banding. */
+html[data-ui="shinkai"] #bg-canvas{width:100%;height:100%;image-rendering:auto}
+
+/* ---------- Tipografi: maru bulat lembut, lega ---------- */
+html[data-ui="shinkai"] h1,
+html[data-ui="shinkai"] h2,
+html[data-ui="shinkai"] h3,
+html[data-ui="shinkai"] .brand{font-family:var(--font-judul);color:var(--ink)}
+html[data-ui="shinkai"] h1{font-weight:500;letter-spacing:.03em;line-height:1.35;font-size:clamp(2rem,4.8vw,3.7rem)}
+html[data-ui="shinkai"] h1 .isi{font-weight:500}
+html[data-ui="shinkai"] h2{font-weight:500;letter-spacing:.03em}
+html[data-ui="shinkai"] h3{font-weight:500;letter-spacing:.03em}
+html[data-ui="shinkai"] .lede{color:var(--ink);font-weight:400;font-size:1.02rem;line-height:1.95;max-width:42ch;margin-top:30px;opacity:.88}
+html[data-ui="shinkai"] .toc h2,
+html[data-ui="shinkai"] .sos h2,
+html[data-ui="shinkai"] .kartu-format,
+html[data-ui="shinkai"] label,
+html[data-ui="shinkai"] .kartu-badan .meta{
+  font-family:var(--font-isi);font-size:.8rem;font-weight:500;letter-spacing:.05em;text-transform:none;color:var(--muted);
+}
+
+/* ---------- Masthead: garis tipis awan; aktif = pil biru ---------- */
+html[data-ui="shinkai"] .masthead{margin-bottom:clamp(56px,9vw,112px);padding-bottom:22px;border-bottom:1px solid var(--hair)}
+html[data-ui="shinkai"] .brand{font-weight:600;font-size:1.12rem;letter-spacing:.06em}
+html[data-ui="shinkai"] .brand svg{transition:transform 1.2s var(--ease)}
+html[data-ui="shinkai"] .menu a{
+  padding:0 18px;font-size:.88rem;font-weight:500;border:1px solid transparent;border-radius:999px;
+  transition:color .3s var(--ease),background .3s var(--ease),border-color .3s var(--ease);
+}
+html[data-ui="shinkai"] .menu a::after{display:none!important}
+html[data-ui="shinkai"] .menu a:hover{color:var(--ink);background:color-mix(in srgb,var(--permukaan) 55%,transparent)}
+html[data-ui="shinkai"] .menu a[aria-current="page"]{border-color:var(--langit-tua);background:var(--langit-tua);color:#FFF}
+html[data-ui="shinkai"] .tema-toggle{border:1px solid var(--hair);border-radius:50%;background:color-mix(in srgb,var(--permukaan) 60%,transparent);transition:background .3s var(--ease)}
+html[data-ui="shinkai"] .tema-toggle:hover{transform:none;box-shadow:none;background:var(--permukaan)}
+
+/* ---------- Tombol: pil awan, hover = rona langit ---------- */
+html[data-ui="shinkai"] .btn{
+  min-height:46px;padding:0 26px;font-size:.88rem;font-weight:600;letter-spacing:.04em;
+  border:1px solid var(--hair);border-radius:999px;background:color-mix(in srgb,var(--permukaan) 82%,transparent);color:var(--ink);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  transition:background .3s var(--ease),border-color .3s var(--ease),color .3s var(--ease),transform .3s var(--ease);
+}
+html[data-ui="shinkai"] .btn:hover,
+html[data-ui="shinkai"] .btn:focus-visible{transform:translateY(-1px);box-shadow:none;background:var(--permukaan);border-color:var(--langit)}
+html[data-ui="shinkai"] .btn:active{opacity:.85}
+html[data-ui="shinkai"] .btn.primary{background:var(--langit-tua);border-color:var(--langit-tua);color:#FFF}
+html[data-ui="shinkai"] .btn.primary:hover,
+html[data-ui="shinkai"] .btn.primary:focus-visible{background:var(--langit);border-color:var(--langit);color:#FFF}
+html[data-ui="shinkai"] .chip{border:1px solid var(--hair);border-radius:999px;background:color-mix(in srgb,var(--permukaan) 55%,transparent);transition:background .3s var(--ease),border-color .3s var(--ease)}
+html[data-ui="shinkai"] .chip:hover{transform:none;box-shadow:none;border-color:var(--langit);background:var(--permukaan)}
+
+/* ---------- Kartu: kaca jendela di depan langit ---------- */
+html[data-ui="shinkai"] .kartu-grid{gap:22px;margin-top:clamp(48px,7vw,84px)}
+html[data-ui="shinkai"] .kartu{
+  padding:30px;border:1px solid var(--hair);border-radius:var(--r-besar);
+  background:color-mix(in srgb,var(--permukaan) 72%,transparent);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:var(--bayang);
+  transition:border-color .4s var(--ease),background .4s var(--ease),transform .5s var(--ease);
+}
+html[data-ui="shinkai"] .kartu::before{display:none}
+html[data-ui="shinkai"] .kartu:hover,
+html[data-ui="shinkai"] .kartu:focus-visible{transform:translateY(-3px);box-shadow:var(--bayang);border-color:var(--langit);background:color-mix(in srgb,var(--permukaan) 88%,transparent)}
+html[data-ui="shinkai"] .kartu:active{transform:none}
+html[data-ui="shinkai"] .kartu.disorot{outline:2px solid var(--matahari);outline-offset:3px}
+html[data-ui="shinkai"] .kartu-ikon{
+  width:54px;height:54px;border:1px solid var(--hair);border-radius:50%;background:color-mix(in srgb,var(--langit) 14%,transparent);color:var(--langit-tua);
+  transition:background .4s var(--ease),border-color .4s var(--ease);
+}
+html[data-ui="shinkai"] .kartu:hover .kartu-ikon,
+html[data-ui="shinkai"] .kartu:focus-visible .kartu-ikon{background:color-mix(in srgb,var(--langit) 26%,transparent);border-color:var(--langit)}
+html[data-ui="shinkai"] .kartu-badan h2{font-size:1.28rem;font-weight:500;letter-spacing:.03em;color:var(--ink)}
+html[data-ui="shinkai"] .kartu-badan p{font-weight:400;color:var(--muted);line-height:1.85}
+html[data-ui="shinkai"] .kartu-format{border:0;padding:0;min-height:0}
+html[data-ui="shinkai"] .kartu-panah{color:var(--langit-tua);transition:transform .5s var(--ease)}
+html[data-ui="shinkai"] .kartu:hover .kartu-panah{transform:translateX(4px)}
+
+html[data-ui="shinkai"] .kartu-media{border:1px solid var(--hair);border-radius:var(--r);overflow:hidden;background:var(--kilau);box-shadow:none}
+html[data-ui="shinkai"] .kartu-media::before{display:none}
+html[data-ui="shinkai"] .kartu-media:hover,
+html[data-ui="shinkai"] .kartu-media.aktif,
+html[data-ui="shinkai"] .kartu-media:focus-within{transform:translateY(-2px);box-shadow:none;border-color:var(--langit)}
+
+/* ---------- Beranda: daftar isi ---------- */
+html[data-ui="shinkai"] .toc ol,
+html[data-ui="shinkai"] .sos ul{list-style:none}
+html[data-ui="shinkai"] .toc li{
+  display:grid;grid-template-columns:72px 1fr;gap:16px;padding:30px 0;border-bottom:1px solid var(--hair);
+  transition:padding .5s var(--ease);
+}
+html[data-ui="shinkai"] .toc li:hover{padding-left:10px}
+html[data-ui="shinkai"] .toc li .no{font-family:var(--font-judul);font-size:1.1rem;color:var(--muted);letter-spacing:.03em;text-transform:none}
+html[data-ui="shinkai"] .toc li h3{font-size:1.4rem;font-weight:500}
+html[data-ui="shinkai"] .toc li p{color:var(--muted);font-weight:400;margin-top:4px}
+
+/* ---------- Form ---------- */
+html[data-ui="shinkai"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+html[data-ui="shinkai"] textarea,
+html[data-ui="shinkai"] select{
+  font:inherit;color:var(--ink);background:color-mix(in srgb,var(--permukaan) 86%,transparent);
+  border:1px solid var(--hair);border-radius:16px;padding:12px 16px;
+  transition:border-color .3s var(--ease),box-shadow .3s var(--ease);
+}
+html[data-ui="shinkai"] input:focus,
+html[data-ui="shinkai"] textarea:focus,
+html[data-ui="shinkai"] select:focus{outline:0;border-color:var(--langit-tua);box-shadow:0 0 0 3px color-mix(in srgb,var(--langit) 32%,transparent)}
+html[data-ui="shinkai"] input::placeholder,
+html[data-ui="shinkai"] textarea::placeholder{color:var(--muted);font-weight:400}
+
+/* ---------- Chat, panel, dialog ---------- */
+html[data-ui="shinkai"] :where(.gelembung){border:1px solid var(--hair);background:var(--permukaan);border-radius:18px 18px 18px 6px}
+html[data-ui="shinkai"] .pintu-kotak,
+html[data-ui="shinkai"] .suara-panel,
+html[data-ui="shinkai"] .menu-aksi,
+html[data-ui="shinkai"] dialog,
+html[data-ui="shinkai"] [role="dialog"],
+html[data-ui="shinkai"] .profil-tamu{
+  background:color-mix(in srgb,var(--permukaan) 94%,transparent);border:1px solid var(--hair);border-radius:var(--r-besar);
+  box-shadow:var(--bayang);
+}
+html[data-ui="shinkai"] .profil-tamu-ikon{border-radius:50%;background:color-mix(in srgb,var(--langit) 18%,transparent)}
+html[data-ui="shinkai"] .sisa-panel{
+  background:color-mix(in srgb,var(--permukaan) 94%,transparent);border-left:1px solid var(--hair);border-radius:26px 0 0 26px;
+  box-shadow:var(--bayang);
+}
+html[data-ui="shinkai"] hr{border:0;border-top:1px solid var(--hair)}
+
+html[data-ui="shinkai"] .site-foot{
+  margin-top:clamp(72px,10vw,128px);padding-top:22px;border-top:1px solid var(--hair);
+  color:var(--muted);font-size:.8rem;letter-spacing:.04em;
+}
+html[data-ui="shinkai"],
+html[data-ui="shinkai"] *{scrollbar-width:thin;scrollbar-color:var(--hair) transparent}
+
+/* ---------- Kursor glint matahari (efek/KursorShinkai) ---------- */
+html[data-ui="shinkai"] .kursor-shinkai{
+  position:fixed;top:0;left:0;width:0;height:0;pointer-events:none;z-index:2147483647;
+  opacity:0;transition:opacity .4s ease;
+}
+html[data-ui="shinkai"] .kursor-shinkai.tampak{opacity:1}
+html[data-ui="shinkai"] .kursor-shinkai-orb{
+  position:absolute;left:0;top:0;display:block;width:12px;height:12px;border-radius:50%;
+  background:radial-gradient(circle,color-mix(in srgb,var(--matahari) 92%,#FFF) 0%,color-mix(in srgb,var(--matahari) 55%,transparent) 55%,transparent 72%);
+  box-shadow:0 0 14px 3px color-mix(in srgb,var(--matahari) 55%,transparent);
+  transition:width .35s var(--ease),height .35s var(--ease),opacity .3s ease;
+}
+html[data-ui="shinkai"] .kursor-shinkai.aktif .kursor-shinkai-orb{width:30px;height:30px}
+html[data-ui="shinkai"] .kursor-shinkai.teks .kursor-shinkai-orb{width:8px;height:8px;opacity:.4}
+html[data-ui="shinkai"] .kursor-shinkai.tekan .kursor-shinkai-orb{width:9px;height:9px}
+
+/* Klik = cincin cahaya melebar (riak). */
+html[data-ui="shinkai"] .riak-shinkai{
+  position:fixed;z-index:2147483646;pointer-events:none;width:52px;height:52px;margin:-26px 0 0 -26px;
+  border-radius:50%;border:2px solid color-mix(in srgb,var(--matahari) 75%,transparent);
+  box-shadow:0 0 18px 2px color-mix(in srgb,var(--matahari) 35%,transparent);
+  animation:riak-shinkai .9s cubic-bezier(.2,.7,.3,1) forwards;
+}
+@keyframes riak-shinkai{
+  0%{transform:scale(.25);opacity:.9}
+  100%{transform:scale(1.8);opacity:0}
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width:720px){
+  html[data-ui="shinkai"] .kartu-grid{gap:14px}
+  html[data-ui="shinkai"] .kartu{grid-template-columns:auto 1fr;padding:22px}
+  html[data-ui="shinkai"] .kartu-panah{display:none}
+  html[data-ui="shinkai"] .toc li{grid-template-columns:44px 1fr}
+  html[data-ui="shinkai"] .lede{font-size:1rem}
+}
+@media (prefers-reduced-motion:reduce){
+  html[data-ui="shinkai"] *,
+  html[data-ui="shinkai"] *::before,
+  html[data-ui="shinkai"] *::after{transition-duration:.01ms!important;animation-duration:.01ms!important;scroll-behavior:auto!important}
+}

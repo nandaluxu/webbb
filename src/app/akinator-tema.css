@@ -40,22 +40,26 @@
    ============================================================ */
 html[data-ui="swiss"][data-tema] body[data-latar="polos"],
 html[data-ui="japandi"][data-tema] body[data-latar="polos"],
-html[data-ui="hanami"][data-tema] body[data-latar="polos"]{
+html[data-ui="hanami"][data-tema] body[data-latar="polos"],
+html[data-ui="shinkai"][data-tema] body[data-latar="polos"]{
   --bg:inherit;--ink:inherit;--muted:inherit;--hair:inherit;--kilau:inherit;--tanda:inherit;
   background:var(--bg);
 }
 html[data-ui="swiss"] body[data-latar="polos"] #bg-canvas,
 html[data-ui="japandi"] body[data-latar="polos"] #bg-canvas,
-html[data-ui="hanami"] body[data-latar="polos"] #bg-canvas{display:block}
+html[data-ui="hanami"] body[data-latar="polos"] #bg-canvas,
+html[data-ui="shinkai"] body[data-latar="polos"] #bg-canvas{display:block}
 
 /* Token lokal --a-* diarahin ke token tema (bukan hitam-putih murni). */
 html[data-ui="swiss"] .aki-papan,
 html[data-ui="japandi"] .aki-papan,
-html[data-ui="hanami"] .aki-papan{
+html[data-ui="hanami"] .aki-papan,
+html[data-ui="shinkai"] .aki-papan{
   --a-bg:var(--bg);--a-ink:var(--ink);--a-muted:var(--muted);--a-hair:var(--hair);
 }
 html[data-ui="japandi"] .aki-papan,
-html[data-ui="hanami"] .aki-papan{--a-bg:var(--permukaan)}
+html[data-ui="hanami"] .aki-papan,
+html[data-ui="shinkai"] .aki-papan{--a-bg:var(--permukaan)}
 
 
 /* ============================================================
@@ -581,6 +585,197 @@ html[data-ui="hanami"] .aki-papan.menang .aki-wadah{
 
 
 /* ============================================================
+   4. SHINKAI (r34) — jendela kereta: kartu kaca bulat, gelembung
+   langit berekor awan, langkah jawaban pil kaca. Layout ny
+   ngeikutin pola Hanami (bingkai genie numpang ke kartu kaca),
+   bahasa visualny ganti: bulat penuh + aksen biru langit + emas.
+   ============================================================ */
+html[data-ui="shinkai"] .aki-papan{
+  --aki-tindih:72px;
+  margin-top:clamp(36px,5vw,64px);border:0;background:transparent;
+}
+html[data-ui="shinkai"] .aki-head{text-align:center}
+html[data-ui="shinkai"] .aki-head h1::after{
+  content:"";display:block;width:64px;height:2px;margin:20px auto 0;
+  background:linear-gradient(90deg,transparent,var(--langit),transparent);
+}
+html[data-ui="shinkai"] .aki-head .lede{margin-left:auto;margin-right:auto;max-width:42ch}
+
+html[data-ui="shinkai"] .aki-grid{
+  grid-template-columns:minmax(0,4fr) minmax(0,7fr);gap:0;min-height:580px;position:relative;
+}
+html[data-ui="shinkai"] .aki-genie{
+  z-index:2;margin:28px calc(var(--aki-tindih) * -1) 28px 0;padding:0;border:0;background:transparent;
+}
+/* Bingkai genie: "bulan" kaca biru. */
+html[data-ui="shinkai"] .aki-wadah{
+  border-radius:44% 10% 44% 10% / 40% 8% 40% 8%;
+  background:linear-gradient(165deg,
+    color-mix(in srgb,var(--langit) 30%,var(--permukaan)),
+    color-mix(in srgb,var(--langit) 8%,var(--permukaan)));
+  box-shadow:0 26px 44px -30px color-mix(in srgb,var(--langit-tua) 75%,transparent),
+             inset 0 0 0 1px color-mix(in srgb,var(--langit) 40%,transparent);
+  transition:box-shadow .6s var(--ease);
+}
+html[data-ui="shinkai"] .aki-wadah img{inset:auto 6% 0 6%;width:88%;height:92%}
+html[data-ui="shinkai"] .aki-kaki{
+  margin-top:16px;padding:0 calc(var(--aki-tindih) + 16px) 0 8px;border-top:0;min-height:40px;
+  font-family:var(--font-judul);font-size:.82rem;font-weight:500;letter-spacing:.08em;text-transform:none;
+}
+html[data-ui="shinkai"] .aki-kaki b{font-weight:500}
+html[data-ui="shinkai"] .aki-sisi{
+  width:36px;height:36px;border:1px solid var(--hair);border-radius:50%;
+  background:var(--permukaan);color:var(--ink);
+}
+html[data-ui="shinkai"] .aki-sisi:hover,
+html[data-ui="shinkai"] .aki-sisi:focus-visible{
+  transform:none;box-shadow:none;border-color:var(--langit-tua);
+  background:color-mix(in srgb,var(--langit) 22%,var(--permukaan));
+}
+
+/* Kartu kaca jendela. */
+html[data-ui="shinkai"] .aki-badan{
+  position:relative;z-index:1;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:clamp(28px,4vw,48px) clamp(24px,4vw,48px) clamp(28px,4vw,44px) calc(var(--aki-tindih) + clamp(24px,3.4vw,44px));
+  background:color-mix(in srgb,var(--permukaan) 86%,transparent);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  border:1px solid var(--hair);border-radius:var(--r-besar);
+  box-shadow:0 34px 60px -46px color-mix(in srgb,var(--langit-tua) 60%,transparent);
+}
+
+@media(min-width:821px){
+  html[data-ui="shinkai"] .aki-papan[data-sisi="kanan"] .aki-grid{grid-template-columns:minmax(0,7fr) minmax(0,4fr)}
+  html[data-ui="shinkai"] .aki-papan[data-sisi="kanan"] .aki-genie{
+    order:2;border:0;margin:28px 0 28px calc(var(--aki-tindih) * -1);
+  }
+  html[data-ui="shinkai"] .aki-papan[data-sisi="kanan"] .aki-kaki{padding:0 8px 0 calc(var(--aki-tindih) + 16px)}
+  html[data-ui="shinkai"] .aki-papan[data-sisi="kanan"] .aki-badan{
+    order:1;
+    padding:clamp(28px,4vw,48px) calc(var(--aki-tindih) + clamp(24px,3.4vw,44px)) clamp(28px,4vw,44px) clamp(24px,4vw,48px);
+  }
+}
+
+/* Pertanyaan: gelembung langit, ekor bulat. */
+html[data-ui="shinkai"] .aki-bola{
+  width:100%;margin:0;padding:22px 28px 26px;color:var(--ink);
+  background:color-mix(in srgb,var(--langit) 15%,var(--permukaan));
+  border-radius:var(--r);
+}
+html[data-ui="shinkai"] .aki-bola::before{
+  top:30px;left:-9px;width:18px;height:18px;
+  background:color-mix(in srgb,var(--langit) 15%,var(--permukaan));
+  border-radius:50%;transform:rotate(0deg);
+}
+html[data-ui="shinkai"] .aki-papan[data-sisi] .aki-bola{margin:0}
+html[data-ui="shinkai"] .aki-papan[data-sisi="kanan"] .aki-bola::before{left:auto;right:-9px}
+html[data-ui="shinkai"] .aki-bola .aki-no{color:var(--muted);opacity:1;font-size:.7rem;font-weight:500;letter-spacing:.14em}
+html[data-ui="shinkai"] .aki-bola .aki-teks{
+  margin-top:10px;font-family:var(--font-judul);font-size:clamp(1.2rem,2vw,1.6rem);
+  font-weight:500;letter-spacing:.03em;line-height:1.85;
+}
+
+html[data-ui="shinkai"] .aki-maju{margin-top:26px;padding:0 4px}
+html[data-ui="shinkai"] .aki-maju-label,
+html[data-ui="shinkai"] .aki-maju-angka{font-size:.7rem;letter-spacing:.08em;font-weight:500;color:var(--muted)}
+html[data-ui="shinkai"] .aki-batang{
+  height:6px;border:0;border-radius:999px;overflow:visible;background:var(--kilau);
+}
+html[data-ui="shinkai"] .aki-batang span{
+  position:relative;border-radius:inherit;
+  background:linear-gradient(90deg,var(--langit-pucat),var(--langit));
+}
+/* Titik matahari di ujung isi progres. */
+html[data-ui="shinkai"] .aki-batang span::after{
+  content:"";position:absolute;right:-7px;top:50%;width:14px;height:14px;
+  border-radius:50%;background:var(--matahari);transform:translateY(-50%);
+}
+
+/* Jawaban: pil kaca, Iya/Tidak besar di atas. */
+html[data-ui="shinkai"] .aki-jawab{
+  display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-top:28px;
+}
+html[data-ui="shinkai"] .aki-tombol{
+  grid-column:span 2;flex-direction:column;gap:6px;min-height:76px;padding:12px 8px;
+  font-size:.95rem;font-weight:500;letter-spacing:.02em;text-align:center;
+  background:var(--permukaan);border:1px solid var(--hair);border-radius:18px;
+  transition:transform .4s var(--ease),background .4s var(--ease),border-color .4s var(--ease),box-shadow .4s var(--ease);
+}
+html[data-ui="shinkai"] .aki-tombol:nth-child(-n+2){grid-column:span 3;min-height:88px;font-size:1.12rem}
+html[data-ui="shinkai"] .aki-tombol[data-j="0"]{
+  background:color-mix(in srgb,var(--langit) 20%,var(--permukaan));border-color:color-mix(in srgb,var(--langit) 55%,var(--hair));
+}
+html[data-ui="shinkai"] .aki-tombol .ki{
+  position:static;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;
+  background:color-mix(in srgb,var(--langit) 30%,var(--permukaan));color:var(--ink);font-size:.64rem;font-weight:500;
+}
+html[data-ui="shinkai"] .aki-tombol:hover:not(:disabled),
+html[data-ui="shinkai"] .aki-tombol:focus-visible:not(:disabled){
+  transform:translateY(-3px);background:color-mix(in srgb,var(--langit) 26%,var(--permukaan));border-color:var(--langit-tua);
+  box-shadow:0 16px 26px -20px var(--langit-tua);
+}
+
+html[data-ui="shinkai"] .aki-kontrol{margin-top:24px;padding-top:0;border-top:0}
+html[data-ui="shinkai"] .aki-kontrol .tautan-kecil{border-bottom:1px solid var(--hair);color:var(--muted)}
+html[data-ui="shinkai"] .aki-kontrol .tautan-kecil:hover{border-bottom-color:var(--langit-tua)}
+html[data-ui="shinkai"] .aki-catatan{font-size:.74rem;letter-spacing:.06em}
+
+html[data-ui="shinkai"] .aki-buka{
+  width:fit-content;margin-bottom:10px;padding:7px 18px;border-radius:999px;
+  background:color-mix(in srgb,var(--langit) 18%,var(--permukaan));color:var(--ink);
+  font-size:.72rem;font-weight:500;letter-spacing:.1em;
+}
+html[data-ui="shinkai"] .aki-buka::before{display:none}
+html[data-ui="shinkai"] .aki-buka.h2{
+  padding:0;border-radius:0;background:transparent;text-transform:none;
+  font-family:var(--font-judul);font-size:clamp(1.5rem,2.6vw,2.1rem);font-weight:500;letter-spacing:.04em;line-height:1.5;
+}
+
+html[data-ui="shinkai"] .aki-intro p{max-width:50ch}
+html[data-ui="shinkai"] .aki-cara{margin:22px 0 28px}
+html[data-ui="shinkai"] .aki-cara li{display:flex;gap:14px;padding:8px 0}
+html[data-ui="shinkai"] .aki-cara li + li{border-top:0}
+html[data-ui="shinkai"] .aki-cara li::before{
+  content:"";flex:none;width:11px;height:11px;margin-top:.55em;border-radius:50%;
+  background:var(--langit);
+}
+html[data-ui="shinkai"] .aki-intro .btn{width:auto;min-width:240px}
+
+html[data-ui="shinkai"] .aksi-tebakan{align-items:center;gap:24px;margin-top:16px;padding:22px 0 4px}
+html[data-ui="shinkai"] .aki-foto{
+  width:136px;height:136px;border:4px solid var(--permukaan);border-radius:var(--r-besar);
+  box-shadow:0 0 0 1px var(--langit),0 18px 30px -22px var(--langit-tua);
+}
+html[data-ui="shinkai"] .aki-nama{font-weight:500;letter-spacing:.04em}
+html[data-ui="shinkai"] .aki-nama.besar{font-size:clamp(1.9rem,3.8vw,2.7rem)}
+html[data-ui="shinkai"] .aki-jawab.tebakan{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+html[data-ui="shinkai"] .aki-jawab.tebakan .btn{min-height:52px;padding:0 28px}
+
+html[data-ui="shinkai"] .aki-opsi{gap:10px;margin-top:20px}
+html[data-ui="shinkai"] .aki-opsi-btn{
+  padding:14px 22px;border:1px solid var(--hair);border-radius:18px;background:var(--permukaan);
+  transition:transform .4s var(--ease),background .4s var(--ease),border-color .4s var(--ease);
+}
+html[data-ui="shinkai"] .aki-opsi-btn:hover:not(:disabled),
+html[data-ui="shinkai"] .aki-opsi-btn:focus-visible:not(:disabled){
+  transform:translateY(-2px);box-shadow:none;border-color:var(--langit-tua);
+  background:color-mix(in srgb,var(--langit) 20%,var(--permukaan));
+}
+
+html[data-ui="shinkai"] .aki-galat{
+  border:1px dashed var(--langit);border-radius:var(--r);
+  background:color-mix(in srgb,var(--langit) 10%,var(--permukaan));
+}
+
+/* Menang: bingkai berpendar langit + emas. */
+html[data-ui="shinkai"] .aki-papan.menang .aki-wadah{
+  box-shadow:0 0 0 7px color-mix(in srgb,var(--langit) 34%,transparent),
+             0 0 0 8px color-mix(in srgb,var(--matahari) 45%,transparent),
+             0 26px 44px -30px color-mix(in srgb,var(--langit-tua) 75%,transparent);
+}
+
+
+/* ============================================================
    4. HP / LAYAR SEMPIT (<= 820px) — semua gaya numpuk: genie di
    atas, konten di bawah. Flip sisi gak relevan di layout numpuk.
    ============================================================ */
@@ -633,11 +828,34 @@ html[data-ui="hanami"] .aki-papan.menang .aki-wadah{
   html[data-ui="hanami"] .aki-tombol{min-height:68px}
   html[data-ui="hanami"] .aki-tombol:nth-child(-n+2){min-height:76px}
   html[data-ui="hanami"] .aki-foto{width:112px;height:112px}
+
+  /* ---- Shinkai ---- */
+  html[data-ui="shinkai"] .aki-grid{grid-template-columns:1fr;min-height:0}
+  html[data-ui="shinkai"] .aki-genie,
+  html[data-ui="shinkai"] .aki-papan[data-sisi="kanan"] .aki-genie{
+    width:min(100%,380px);margin:0 auto 16px;order:0;
+  }
+  html[data-ui="shinkai"] .aki-wadah{flex:none;height:min(46vh,400px)}
+  html[data-ui="shinkai"] .aki-kaki,
+  html[data-ui="shinkai"] .aki-papan[data-sisi="kanan"] .aki-kaki{padding:0 4px}
+  html[data-ui="shinkai"] .aki-kaki span{display:none}
+  html[data-ui="shinkai"] .aki-badan,
+  html[data-ui="shinkai"] .aki-papan[data-sisi="kanan"] .aki-badan{padding:26px 20px 24px;order:0}
+  html[data-ui="shinkai"] .aki-bola{padding:18px 20px 22px}
+  /* Ekor gelembung ke atas (genie ada di atas). */
+  html[data-ui="shinkai"] .aki-bola::before,
+  html[data-ui="shinkai"] .aki-papan[data-sisi="kanan"] .aki-bola::before{
+    top:-9px;left:50%;right:auto;margin-left:-9px;
+  }
+  html[data-ui="shinkai"] .aki-tombol{min-height:68px}
+  html[data-ui="shinkai"] .aki-tombol:nth-child(-n+2){min-height:76px}
+  html[data-ui="shinkai"] .aki-foto{width:112px;height:112px}
 }
 
 @media(max-width:400px){
   html[data-ui="japandi"] .aki-tombol{flex-basis:100%}
   html[data-ui="hanami"] .aki-tombol{font-size:.88rem}
+  html[data-ui="shinkai"] .aki-tombol{font-size:.88rem}
 }
 
 /* Gerak dikurangi: matiin angkat/geser hover di tiga gaya. */
@@ -650,9 +868,14 @@ html[data-ui="hanami"] .aki-papan.menang .aki-wadah{
   html[data-ui="japandi"] .aki-opsi-btn,
   html[data-ui="hanami"] .aki-tombol,
   html[data-ui="hanami"] .aki-opsi-btn,
-  html[data-ui="hanami"] .aki-wadah{transition:none}
+  html[data-ui="hanami"] .aki-wadah,
+  html[data-ui="shinkai"] .aki-tombol,
+  html[data-ui="shinkai"] .aki-opsi-btn,
+  html[data-ui="shinkai"] .aki-wadah{transition:none}
   html[data-ui="japandi"] .aki-tombol:hover:not(:disabled),
   html[data-ui="japandi"] .aki-opsi-btn:hover:not(:disabled),
   html[data-ui="hanami"] .aki-tombol:hover:not(:disabled),
-  html[data-ui="hanami"] .aki-opsi-btn:hover:not(:disabled){transform:none}
+  html[data-ui="hanami"] .aki-opsi-btn:hover:not(:disabled),
+  html[data-ui="shinkai"] .aki-tombol:hover:not(:disabled),
+  html[data-ui="shinkai"] .aki-opsi-btn:hover:not(:disabled){transform:none}
 }

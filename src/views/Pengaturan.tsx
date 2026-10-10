@@ -29,6 +29,7 @@ const KET_UI: Record<string, string> = {
   swiss: "Swiss Zen — tulisan tipis, garis 1px, kartu tanpa bayangan.",
   japandi: "Japandi — warna linen & kayu, sudut membulat, permukaan lembut.",
   hanami: "Hanami — putih kelopak, garis tipis, sakura berjatuhan di latar.",
+  shinkai: "Shinkai — langit anime sinematik: awan parallax, kawanan burung, kaca jendela kereta.",
 };
 
 function terapkanTema(t: "terang" | "gelap") {
@@ -89,7 +90,7 @@ function useUkuranSekarang(): UkuranChat {
    + ukuran chat: gak ada state React yang menduplikasi. Swiss
    Zen = lapisan CSS buatan pemilik (swiss-zen.css) — grid ketat,
    hairline 1px, ruang lega, tanpa bayangan. */
-type GayaUI = "klasik" | "swiss" | "japandi" | "hanami";
+type GayaUI = "klasik" | "swiss" | "japandi" | "hanami" | "shinkai";
 const KUNCI_UI = "neyhra:ui";
 
 function terapkanUI(g: GayaUI) {
@@ -107,7 +108,7 @@ function langgananUI(f: () => void) {
 
 function bacaUI(): GayaUI {
   const u = document.documentElement.dataset.ui;
-  return u === "swiss" || u === "japandi" || u === "hanami" ? u : "klasik";
+  return u === "swiss" || u === "japandi" || u === "hanami" || u === "shinkai" ? u : "klasik";
 }
 
 function useUISekarang(): GayaUI {
@@ -217,9 +218,18 @@ export default function Pengaturan() {
             >
               Hanami
             </button>
+            {/* r34: tema ke-5 — langit sinematik gaya anime. */}
+            <button
+              type="button"
+              className={"btn kecil" + (ui === "shinkai" ? " primary" : "")}
+              aria-pressed={ui === "shinkai"}
+              onClick={() => terapkanUI("shinkai")}
+            >
+              Shinkai
+            </button>
           </div>
         </div>
-        {/* fix31: deskripsi 4 tema gak lagi numpuk jadi paragraf
+        {/* fix31: deskripsi 5 tema gak lagi numpuk jadi paragraf
             dinding — sekarang nyebutin gaya yang LAGI DIPILIK aja
             (ikut ganti pas tombol ny dipencet). */}
         <p className="atur-ket-kecil" aria-live="polite">

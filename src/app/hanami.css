@@ -23,6 +23,12 @@ html[data-ui="hanami"]{
   --sakura-pucat:#FBDCE5;
   --sakura-tua:#D6849F;
   --wakaba:#789A66;
+  /* Dibaca LatarHanami lewat efek/sakura.ts (opsional; kalau dihapus, nilai
+     bawaan di sakura.ts dipakai): ranting, sinar pagi, langit senja, lentera. */
+  --ranting:#7B5E58;
+  --sinar:#FFE6A8;
+  --plum:#3B2650;
+  --lentera:#FFA85A;
   --r:16px 3px 16px 3px;
   --r-besar:26px 4px 26px 4px;
   --ease:cubic-bezier(.25,.6,.3,1);
@@ -43,6 +49,7 @@ html[data-ui="hanami"][data-tema="gelap"]{
   --sakura-pucat:#F7D5E0;
   --sakura-tua:#E58FAE;
   --wakaba:#A3BE8E;
+  --ranting:#5A4258;
 }
 
 html[data-ui="hanami"]{scroll-behavior:smooth;text-rendering:optimizeLegibility}
@@ -196,32 +203,101 @@ html[data-ui="hanami"] .site-foot{
 html[data-ui="hanami"],
 html[data-ui="hanami"] *{scrollbar-width:thin;scrollbar-color:var(--hair) transparent}
 
-/* ---------- Kursor kelopak + bunga mekar (efek/KursorHanami) ---------- */
+/* ---------- Kursor kelopak + bunga mekar (efek/KursorHanami v2) ----------
+   Kelopak pengikut (fisika pegas, kepak 3D), bunga lima kelopak yang mekar
+   bergantian saat klik/tap, dan kelopak kecil yang berjatuhan (yang ini
+   digambar di canvas oleh JS, bukan CSS). Nama class sama dengan v1. */
+html[data-ui="hanami"]{
+  /* dibaca juga oleh JS untuk warna kelopak yang berjatuhan */
+  --hanami-1:#ffd3e1;
+  --hanami-2:#f9b4cb;
+  --hanami-3:#f4a0bd;
+  --hanami-garis:rgba(205,92,135,.55);
+  --hanami-putik:#f2c36b;
+}
+
+html[data-ui="hanami"] .kursor-hanami,
+html[data-ui="hanami"] .mekar-hanami{
+  position:fixed;left:0;top:0;pointer-events:none;
+}
+
+/* ---- kelopak pengikut ---- */
+/* z-index sengaja setinggi kursor gaya lain (Swiss/Japandi): cursor:none
+   dipaksa global di layout, jadi kalau kelopak ketutup toast/overlay,
+   kursor ikut hilang. */
 html[data-ui="hanami"] .kursor-hanami{
-  position:fixed;top:0;left:0;width:0;height:0;pointer-events:none;z-index:2147483647;
-  opacity:0;transition:opacity .4s ease;
+  z-index:2147483647;opacity:0;transition:opacity .25s ease;
 }
 html[data-ui="hanami"] .kursor-hanami.tampak{opacity:1}
-html[data-ui="hanami"] .kursor-hanami-kelopak{
-  position:absolute;left:0;top:0;display:block;width:18px;height:22px;
-  transition:width .5s var(--ease),height .5s var(--ease),opacity .4s ease;
-}
-html[data-ui="hanami"] .kursor-hanami-kelopak svg{display:block;width:100%;height:100%;overflow:visible}
-html[data-ui="hanami"] .kursor-hanami-kelopak path{fill:var(--sakura-tua);stroke:var(--permukaan);stroke-width:1.2;stroke-linejoin:round;paint-order:stroke}
-html[data-ui="hanami"] .kursor-hanami.aktif .kursor-hanami-kelopak{width:30px;height:36px}
-html[data-ui="hanami"] .kursor-hanami.teks .kursor-hanami-kelopak{opacity:.35}
-html[data-ui="hanami"] .kursor-hanami.tekan .kursor-hanami-kelopak{width:14px;height:17px}
 
-html[data-ui="hanami"] .mekar-hanami{
-  position:fixed;z-index:2147483646;pointer-events:none;width:56px;height:56px;margin:-28px 0 0 -28px;
-  animation:mekar-hanami 1.1s cubic-bezier(.2,.7,.3,1) forwards;
+html[data-ui="hanami"] .kursor-hanami-kelopak{
+  position:absolute;left:0;top:0;display:block;width:18px;height:22px;will-change:transform;
 }
-html[data-ui="hanami"] .mekar-hanami svg{display:block;width:100%;height:100%}
-html[data-ui="hanami"] .mekar-hanami path{fill:color-mix(in srgb,var(--sakura) 55%,transparent);stroke:var(--sakura-tua);stroke-width:.8}
-@keyframes mekar-hanami{
-  0%{transform:scale(.2) rotate(-30deg);opacity:0}
-  25%{opacity:1}
-  100%{transform:scale(1.5) rotate(25deg);opacity:0}
+html[data-ui="hanami"] .kursor-hanami-kelopak svg{
+  display:block;width:100%;height:100%;overflow:visible;
+  fill:var(--hanami-2);stroke:var(--hanami-garis);stroke-width:.8;stroke-linejoin:round;
+  filter:drop-shadow(0 2px 3px rgba(190,80,120,.28));
+  transition:
+    transform .35s cubic-bezier(.34,1.56,.64,1),
+    opacity .25s ease,
+    fill .25s ease,
+    filter .25s ease;
+}
+/* di atas link / tombol: membesar, lebih terang */
+html[data-ui="hanami"] .kursor-hanami.aktif .kursor-hanami-kelopak svg{
+  transform:scale(1.55);fill:var(--hanami-1);filter:drop-shadow(0 0 6px rgba(249,180,203,.85));
+}
+/* di atas teks: mengecil dan memudar supaya nggak nutupin bacaan */
+html[data-ui="hanami"] .kursor-hanami.teks .kursor-hanami-kelopak svg{transform:scale(.65);opacity:.5}
+/* ditekan */
+html[data-ui="hanami"] .kursor-hanami.tekan .kursor-hanami-kelopak svg{transform:scale(.8)}
+html[data-ui="hanami"] .kursor-hanami.aktif.tekan .kursor-hanami-kelopak svg{transform:scale(1.25)}
+
+/* ---- bunga mekar saat klik/tap ---- */
+html[data-ui="hanami"] .mekar-hanami{
+  z-index:9997;width:60px;height:60px;margin:-30px 0 0 -30px;
+  animation:hanami-mekar 1.15s cubic-bezier(.2,.8,.2,1) forwards;
+}
+html[data-ui="hanami"] .mekar-hanami svg{display:block;width:100%;height:100%;overflow:visible}
+/* tiap kelopak buka bergantian (delay lewat --i dari JS) */
+html[data-ui="hanami"] .mekar-hanami .bk{
+  fill:var(--hanami-1);stroke:var(--hanami-garis);stroke-width:.6;stroke-linejoin:round;
+  animation:hanami-kelopak .55s cubic-bezier(.2,1.1,.3,1.25) both;
+  animation-delay:calc(var(--i) * 40ms);
+}
+html[data-ui="hanami"] .mekar-hanami .putik{
+  fill:var(--hanami-putik);
+  animation:hanami-kelopak .45s .16s cubic-bezier(.2,1.1,.3,1.25) both;
+}
+@keyframes hanami-mekar{
+  0%{transform:scale(.5) rotate(-35deg);opacity:0}
+  18%,60%{opacity:1}
+  100%{transform:scale(1.35) rotate(20deg);opacity:0}
+}
+@keyframes hanami-kelopak{
+  from{transform:scale(0)}
+  to{transform:scale(1)}
+}
+@media (prefers-reduced-motion:reduce){
+  html[data-ui="hanami"] .mekar-hanami{display:none}
+  html[data-ui="hanami"] .kursor-hanami-kelopak svg{transition:none}
+}
+
+/* ---------- Transisi halaman (efek/TransisiKelopak) ----------
+   TransisiKelopak menyetel html[data-transisi="masuk"] sekitar 1 detik tiap
+   rute berganti; konten baru masuk mengikuti arah angin. Dikecualikan kalau
+   halaman memuat overlay fixed (.post-lapis di /post/[id]): transform/filter
+   di <main> bikin main jadi containing block, jadi overlay bakal nempel ke
+   kotak main selama animasi lalu loncat ke viewport. */
+@keyframes masuk-angin{
+  from{opacity:0;transform:translateX(-28px);filter:blur(6px)}
+  to{opacity:1;transform:none;filter:none}
+}
+html[data-ui="hanami"][data-transisi="masuk"] main:not(:has(.post-lapis)){
+  animation:masuk-angin .9s cubic-bezier(.22,.7,.2,1) both;
+}
+@media (prefers-reduced-motion:reduce){
+  html[data-ui="hanami"][data-transisi="masuk"] main{animation:none}
 }
 
 /* ---------- Mobile ---------- */

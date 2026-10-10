@@ -5,7 +5,9 @@
    - Swiss Zen: kisi tanda-plus yang "bangun" dekat kursor + kursor
                 tanda-potong magnet
    - Japandi  : kabut washi + serat kertas + kursor batu lumut
-   - Hanami   : kelopak sakura berjatuhan + kursor kelopak, klik = mekar
+   - Hanami   : taman sakura (kelopak berjatuhan, ranting, sinar pagi /
+                lentera senja) + transisi halaman kelopak tertiup angin +
+                kursor kelopak, klik = mekar
    Ganti gaya di Pengaturan (event ui:ubah) langsung ganti pasangan
    efeknya tanpa reload. Snapshot server = null supaya gak ada kedip
    efek klasik pas pertama buka di gaya lain. */
@@ -19,6 +21,7 @@ import LatarJapandi from "@/components/efek/LatarJapandi";
 import KursorJapandi from "@/components/efek/KursorJapandi";
 import LatarHanami from "@/components/efek/LatarHanami";
 import KursorHanami from "@/components/efek/KursorHanami";
+import TransisiKelopak from "@/components/efek/TransisiKelopak";
 
 type Gaya = "klasik" | "swiss" | "japandi" | "hanami";
 
@@ -52,6 +55,7 @@ export default function LatarKursor() {
     return (
       <>
         <LatarHanami />
+        <TransisiKelopak />
         <KursorHanami />
       </>
     );

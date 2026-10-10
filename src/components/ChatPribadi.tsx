@@ -17,11 +17,13 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { io, type Socket } from "socket.io-client";
-import { KirimIkon, KiriIkon, OrangIkon, CentangIkon, TutupIkon, LencanaVerified, ObrolanIkon, Panah } from "@/components/ikon";
+import { KirimIkon, KiriIkon, OrangIkon, CentangIkon, TutupIkon, LencanaVerified, ObrolanIkon, Panah, BalasIkon, SalinIkon } from "@/components/ikon";
+import MenuAksi, { useTekanLama, type AksiItem } from "@/components/MenuAksi";
 import { useSesi, bukaPintu } from "@/lib/sesi-pengguna";
 import { useChatPribadi, tutupChat } from "@/lib/chat-pribadi";
 import { mainkanSfx } from "@/lib/suara";
 import { kunciGulir, bukaKunciGulir } from "@/lib/gulir";
+import { formatSalinBanyak, salinTeks } from "@/lib/salin-chat";
 
 type KotakTeman = {
   id: string;
@@ -42,6 +44,9 @@ type Pesan = {
   keId: string;
   baca: string | null;
   klienId?: string;
+  /* r33: pesan yang di-quote (id, teks, waktu, + dariId buat
+     mastiin label ny "Lu" atau nama lawan). */
+  balasan: { id: string; teks: string; waktu: string; dariId: string } | null;
 };
 
 const pemisahJam = new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" });
@@ -103,6 +108,13 @@ export default function ChatPribadi() {
   const [galatKirim, setGalatKirim] = useState("");
   const [menulis, setMenulis] = useState(false);
   const [sibukIkut, setSibukIkut] = useState<string | null>(null);
+  /* r33: pesan yang lagi di-quote (bar balasan di atas komposer). */
+  const [balasan, setBalasan] = useState<Pesan | null>(null);
+  /* r34: menu aksi pesan (tahan di HP / klik kanan di desktop) —
+     komponen MenuAksi sama kayak ruang obrolan. */
+  const [menu, setMenu] = useState<{ x: number; y: number; p: Pesan } | null>(null);
+  /* Umpan balik singkat ("Pesan tersalin") di dasar panel. */
+  const [kabar, setKabar] = useState("");
   /* HP: pane yang keliatan (desktop dua-duany via CSS). */
   const [tampil, setTampil] = useState<"daftar" | "obrolan">("daftar");
 
@@ -160,6 +172,7 @@ export default function ChatPribadi() {
       setLawan({ id: t.id, nama: t.nama, username: t.username, pfp: t.pfp, verified: !!t.verified });
       setPesan([]);
       setGalatKirim("");
+      setBalasan(null);
       setTampil("obrolan");
       fetch("/api/teman/pesan?dengan=" + encodeURIComponent(t.id), { cache: "no-store", signal: AbortSignal.timeout(12000) })
         .then((r) => (r.ok ? r.json() : Promise.reject()))
@@ -204,6 +217,10 @@ export default function ChatPribadi() {
     } else {
       setTampil("daftar");
     }
+    /* r34: menu aksi dibubarkan pas panel ketutup / target ganti —
+       di cleanup (bukan body) biar gak nge-trigger render berantai
+       pas buka. */
+    return () => setMenu(null);
     /*eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [terbuka, target]);
 
@@ -215,6 +232,8 @@ export default function ChatPribadi() {
       const el = areaRef.current;
       if (el) el.scrollTop = el.scrollHeight;
     });
+    /* r34: ganti lawan = menu aksi pesan lama gak relevan lagi. */
+    return () => setMenu(null);
   }, [lawan?.id]);
 
   useLayoutEffect(() => {
@@ -356,6 +375,11 @@ export default function ChatPribadi() {
     if (!ta || !lg || !pengguna) return;
     const teks = ta.value.trim();
     if (!teks) return;
+    /* Quote ny kebawa sekalian (kalau ada), terus bar balasan
+       langsung dicabut — kayak ruang obrolan. */
+    const balasanKirim = balasan;
+    const balasanId = balasanKirim ? balasanKirim.id : undefined;
+    setBalasan(null);
     ta.value = "";
     ta.style.height = "auto";
     const klienId = "k" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -367,6 +391,9 @@ export default function ChatPribadi() {
       dariId: pengguna.id,
       keId: lg.id,
       baca: null,
+      balasan: balasanKirim
+        ? { id: balasanKirim.id, teks: balasanKirim.teks, waktu: balasanKirim.waktu, dariId: balasanKirim.dariId }
+        : null,
     };
     nempelBawah.current = true;
     gabung([sementara]);
@@ -375,7 +402,7 @@ export default function ChatPribadi() {
       const r = await fetch("/api/teman/pesan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dengan: lg.id, teks, klienId }),
+        body: JSON.stringify({ dengan: lg.id, teks, klienId, balasanId }),
         signal: AbortSignal.timeout(10000),
       });
       const d = await r.json().catch(() => ({}));
@@ -391,9 +418,10 @@ export default function ChatPribadi() {
           return;
         }
         /* Gagal kirim: pesan optimistis dicopot, teks balik ke
-           komposer biar gak ilang. */
+           komposer biar gak ilang. Quote ny dibalikin juga. */
         setPesan((lama) => lama.filter((p) => p.klienId !== klienId));
         ta.value = teks;
+        setBalasan(balasanKirim);
         setGalatKirim(d.galat || "Gagal kirim pesan.");
         mainkanSfx("failure");
         return;
@@ -404,9 +432,84 @@ export default function ChatPribadi() {
     } catch {
       setPesan((lama) => lama.filter((p) => p.klienId !== klienId));
       ta.value = teks;
+      setBalasan(balasanKirim);
       setGalatKirim("Gak nyambung ke server.");
       mainkanSfx("failure");
     }
+  }
+
+  /* r34: kabar singkat di dasar panel (2.4 detik, nyambung ke
+     aksi salin). Tanpa ref: timeout ny cuma ngosongin kabar kalau
+     teks ny masih puny ny sendiri (functional update) — kabar baru
+     gak ketimpa timeout ny yang lama. */
+  function beriKabar(t: string) {
+    setKabar(t);
+    window.setTimeout(() => setKabar((k) => (k === t ? "" : k)), 2400);
+  }
+
+  /* r34: salin satu pesan — format ny sama kayak chat global
+     ([tanggal, jam] nama: teks), nama pengirim disesuaikan lawan
+     obrolan ("Lu" di UI tetep "nama asli" di hasil salin).
+     Sengaja baca state lawan (bukan lawanRef) biar fungsi ny
+     bebas akses ref — dipanggil dari menu yang dibangun pas
+     render (aturan react-hooks/refs). */
+  async function salin(p: Pesan) {
+    const nama = lawan ? (p.dariId === lawan.id ? lawan.nama : pengguna?.nama ?? "") : "";
+    const ok = await salinTeks(formatSalinBanyak([{ nama, teks: p.teks, waktu: p.waktu }]));
+    if (ok) {
+      beriKabar("Pesan tersalin");
+      mainkanSfx("notification");
+    } else {
+      beriKabar("Clipboard ny keblokir browser");
+      mainkanSfx("failure");
+    }
+  }
+
+  /* r34: buka menu aksi di titik (x, y) layar. */
+  function bukaMenu(p: Pesan) {
+    return (x: number, y: number) => {
+      setMenu({ x, y, p });
+      mainkanSfx("ui-menu");
+    };
+  }
+
+  /* r34: isi menu aksi pesan pribadi — Balas + Salin aja (gak ada
+     hapus/lapor: pesan pribadi gak punya endpoint hapus + lapor ny
+     buat konten publik). */
+  function itemMenu(p: Pesan): AksiItem[] {
+    return [
+      { id: "balas", label: "Balas", ikon: <BalasIkon ukuran={15} />, onKlik: () => balas(p) },
+      { id: "salin", label: "Salin", ikon: <SalinIkon ukuran={15} />, onKlik: () => void salin(p) },
+    ];
+  }
+
+  /* r33: mulai quote — bar balasan nongol di atas komposer.
+     (r34) objek ny dibikin baru tiap kali biar EFEK fokus di
+     bawah tetep kepancing walau nyasar pesan yang sama. */
+  function balas(p: Pesan) {
+    setBalasan({ ...p });
+  }
+
+  /* r34: fokus ke komposer tiap kali mulai balas — dulunya di dalem
+     balas() (baca taRef), dipindah ke efek biar handler menu aksi
+     (yang dibangun pas render) bebas akses ref. */
+  useEffect(() => {
+    if (balasan) requestAnimationFrame(() => taRef.current?.focus());
+  }, [balasan]);
+
+  /* r33: lompat ke pesan yang di-quote (klik chip quote) — scroll
+     ke tengah + kedip 2x (kayak ruang obrolan). Pesannya gak
+     ke-load (lebih lama dari 30 terakhir) = diem aja. */
+  function lompatKe(id: string) {
+    const el = document.getElementById("cp-pesan-" + id);
+    if (!el) return;
+    el.scrollIntoView({
+      block: "center",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
+    el.classList.add("sorot");
+    window.setTimeout(() => el.classList.remove("sorot"), 2900);
+    mainkanSfx("ui-menu");
   }
 
   /* Ketik: bunyi gak perlu; kasih tau lawan (di-throttle 2 detik). */
@@ -606,7 +709,6 @@ export default function ChatPribadi() {
                 {pesan.map((p, i) => {
                   const d = new Date(p.waktu);
                   const bedaHari = i === 0 || labelHari(new Date(pesan[i - 1].waktu)) !== labelHari(d);
-                  const sendiri = p.dariId === pengguna?.id;
                   return (
                     <div key={p.id} className="cp-baris-hari">
                       {bedaHari && (
@@ -614,26 +716,15 @@ export default function ChatPribadi() {
                           <span>{labelHari(d)}</span>
                         </div>
                       )}
-                      <div className={"cp-m" + (sendiri ? " sendiri" : "")}>
-                        <div className="cp-gelembung">
-                          <p>{p.teks}</p>
-                          <span className="cp-jam">
-                            {sendiri && (
-                              <span className="cp-cek" aria-label={p.baca ? "Dibaca" : "Terkirim"}>
-                                {p.baca ? (
-                                  <>
-                                    <CentangIkon ukuran={11} />
-                                    <CentangIkon ukuran={11} />
-                                  </>
-                                ) : (
-                                  <CentangIkon ukuran={11} />
-                                )}
-                              </span>
-                            )}
-                            {jam(p.waktu)}
-                          </span>
-                        </div>
-                      </div>
+                      <BarisPesan
+                        p={p}
+                        aku={p.dariId === pengguna?.id}
+                        idLawan={lawan.id}
+                        namaLawan={lawan.nama}
+                        onBalas={balas}
+                        onLompat={lompatKe}
+                        onMenu={bukaMenu(p)}
+                      />
                     </div>
                   );
                 })}
@@ -656,11 +747,28 @@ export default function ChatPribadi() {
                 </p>
               )}
 
+              {/* r33: bar balasan — muncul pas ada pesan yang lagi
+                  di-quote. Dua baris: label "Membalas <nama>" + tombol
+                  batal, terus cuplikan 1 baris (dipotong CSS doang). */}
+              {balasan && (
+                <div className="cp-balas-bar" role="group" aria-label="Pratinjau balasan">
+                  <div className="cp-balas-bar-atas">
+                    <span className="cp-balas-bar-label">
+                      Membalas <b>{balasan.dariId === lawan.id ? lawan.nama : "Lu"}</b>
+                    </span>
+                    <button type="button" className="cp-balas-bar-tutup" onClick={() => setBalasan(null)} aria-label="Batal balas">
+                      <TutupIkon />
+                    </button>
+                  </div>
+                  <p className="cp-balas-bar-teks">{balasan.teks}</p>
+                </div>
+              )}
+
               <div className="cp-komposer">
                 <textarea
                   ref={taRef}
                   rows={1}
-                  placeholder={"Pesan buat " + lawan.nama}
+                  placeholder={balasan ? "Balas pesan ny..." : "Pesan buat " + lawan.nama}
                   aria-label={"Pesan buat " + lawan.nama}
                   onChange={ketik}
                   onKeyDown={(e) => {
@@ -677,6 +785,168 @@ export default function ChatPribadi() {
             </>
           )}
         </section>
+      </div>
+
+      {/* r34: menu aksi pesan (tahan / klik kanan) — fixed di posisi
+          pointer, dijepit biar gak keluar viewport (urusan ny
+          MenuAksi). Z-index ny diangkat di chat-pribadi.css biar
+          di atas lapisan panel (cp-lapis 420 > menu-aksi 400). */}
+      {menu && <MenuAksi x={menu.x} y={menu.y} items={itemMenu(menu.p)} onTutup={() => setMenu(null)} />}
+
+      {/* r34: kabar singkat ("Pesan tersalin") di dasar panel. */}
+      {kabar && (
+        <p className="cp-kabar" role="status">
+          {kabar}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ---------- Satu baris pesan (r33): gelembung + quote + balas ----------
+   Satu set interaksi buat nyalain quote (kayak BarisPesan di ruang
+   obrolan, versi pribadi):
+   - Geser-kiri di HP (dorong > 12px mulai, lepas pas lewat -48px)
+   - Tombol balas: nongol pas hover/fokus (desktop) / lagi nggeser
+   - Klik-dobel gelembung (desktop) = balas juga
+   - Tahan 480ms (HP) / klik kanan (desktop) = menu aksi (r34):
+     Balas + Salin — persis pola ruang obrol, pake hook useTekanLama
+     yang sama; gerakan > 10px maturin timer, jadi swipe + tahan
+     gak pernah kepancing barengan.
+   - Chip quote di dalem gelembung: klik = lompat ke pesan aslinya
+   Gerakan vertikal maturin swipe (lagi scroll) — handler ny pasif,
+   browser tetep ngatur scroll. */
+function BarisPesan({
+  p,
+  aku,
+  idLawan,
+  namaLawan,
+  onBalas,
+  onLompat,
+  onMenu,
+}: {
+  p: Pesan;
+  aku: boolean;
+  idLawan: string;
+  namaLawan: string;
+  onBalas: (p: Pesan) => void;
+  onLompat: (id: string) => void;
+  onMenu: (x: number, y: number) => void;
+}) {
+  const awal = useRef<{ x: number; y: number; aktif: boolean; dx: number } | null>(null);
+  const barisRef = useRef<HTMLDivElement | null>(null);
+  const gelembungRef = useRef<HTMLDivElement | null>(null);
+  const tekan = useTekanLama(onMenu);
+
+  function mulai(e: React.TouchEvent) {
+    awal.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, aktif: false, dx: 0 };
+  }
+
+  function gerak(e: React.TouchEvent) {
+    const a = awal.current;
+    if (!a) return;
+    const dx = e.touches[0].clientX - a.x;
+    const dy = e.touches[0].clientY - a.y;
+    if (!a.aktif) {
+      /* Gerakan vertikal lebih dominan = user lagi scroll, bukan
+         nge-swipe — nyerahin ke browser. */
+      if (Math.abs(dy) > 12) {
+        awal.current = null;
+        return;
+      }
+      if (dx < -12 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+        a.aktif = true;
+        barisRef.current?.classList.add("menggeser");
+      } else return;
+    }
+    a.dx = dx;
+    const g = gelembungRef.current;
+    if (g) g.style.transform = `translateX(${Math.max(-84, Math.min(0, dx))}px)`;
+  }
+
+  function selesai() {
+    const a = awal.current;
+    barisRef.current?.classList.remove("menggeser");
+    const g = gelembungRef.current;
+    if (g) g.style.transform = "";
+    if (a && a.aktif && a.dx < -48) onBalas(p);
+    awal.current = null;
+  }
+
+  /* Label pengirim quote: dari lawan = nama ny, dari sendiri = "Lu". */
+  const namaQuote = p.balasan ? (p.balasan.dariId === idLawan ? namaLawan : "Lu") : "";
+
+  return (
+    <div
+      className={"cp-m" + (aku ? " sendiri" : "")}
+      ref={barisRef}
+      id={"cp-pesan-" + p.id}
+      /* Satu set handler sentuh ngerangkap dua-dua ny (pola ruang
+         obrol): geser-kiri buat balas + tahan 480ms buat menu aksi.
+         Gerakan > 10px maturin timer tahan (dalem useTekanLama). */
+      onTouchStart={(e) => {
+        mulai(e);
+        tekan.onTouchStart(e);
+      }}
+      onTouchMove={(e) => {
+        gerak(e);
+        tekan.onTouchMove(e);
+      }}
+      onTouchEnd={(e) => {
+        selesai();
+        tekan.onTouchEnd();
+      }}
+      onTouchCancel={(e) => {
+        selesai();
+        tekan.onTouchCancel();
+      }}
+      onContextMenu={tekan.onContextMenu}
+    >
+      {/* Tombol balas: nempel di sisi bebas baris (kanan buat pesan
+          dia, kiri buat pesan gue) — gak pernah nimpa gelembung. */}
+      <button
+        type="button"
+        className="cp-tombol-balas"
+        aria-label={"Balas pesan" + (aku ? " sendiri" : " dari " + namaLawan)}
+        title="Balas (atau klik-dobel pesan)"
+        onClick={() => onBalas(p)}
+      >
+        <BalasIkon />
+      </button>
+      <div
+        className="cp-gelembung"
+        ref={gelembungRef}
+        onDoubleClick={() => onBalas(p)}
+      >
+        {p.balasan && (
+          <button
+            type="button"
+            className="cp-balas-konteks"
+            onClick={(e) => {
+              e.stopPropagation();
+              onLompat(p.balasan!.id);
+            }}
+            aria-label={"Lihat pesan yang dibalas dari " + namaQuote}
+          >
+            <b>{namaQuote}</b>: {p.balasan.teks}
+          </button>
+        )}
+        <p>{p.teks}</p>
+        <span className="cp-jam">
+          {aku && (
+            <span className="cp-cek" aria-label={p.baca ? "Dibaca" : "Terkirim"}>
+              {p.baca ? (
+                <>
+                  <CentangIkon ukuran={11} />
+                  <CentangIkon ukuran={11} />
+                </>
+              ) : (
+                <CentangIkon ukuran={11} />
+              )}
+            </span>
+          )}
+          {jam(p.waktu)}
+        </span>
       </div>
     </div>
   );
