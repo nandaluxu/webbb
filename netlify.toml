@@ -1,0 +1,41 @@
+# netlify.toml untuk nandaluxu/webbb (Next.js 16 + Prisma)
+#
+# Netlify otomatis mendeteksi Next.js dan memasang runtime-nya, jadi
+# tidak perlu mendeklarasikan plugin secara manual.
+
+[build]
+  # Prisma Client harus digenerate dulu sebelum build.
+  # Sengaja TIDAK memakai "npm run build" karena script itu menyalin file ke
+  # .next/standalone (khusus deploy self-hosted), yang tidak dipakai Netlify.
+  command = "npx prisma generate && npx next build"
+  publish = ".next"
+
+[build.environment]
+  # Next.js 16 butuh Node.js 20.9 atau lebih baru.
+  NODE_VERSION = "20"
+  NEXT_TELEMETRY_DISABLED = "1"
+
+# Env variable yang perlu diisi di Netlify (Site configuration > Environment variables),
+# JANGAN ditulis di file ini karena repo-nya publik:
+#   DATABASE_URL  -> koneksi database (lihat catatan di bawah)
+#   NEXTAUTH_SECRET / NEXTAUTH_URL (kalau dipakai)
+#   OBROLAN_PORT  -> tidak relevan di Netlify
+
+# ---------------------------------------------------------------------------
+# CATATAN PENTING (batasan Netlify untuk proyek ini)
+# ---------------------------------------------------------------------------
+# Netlify bersifat serverless, sedangkan proyek ini dirancang untuk server
+# yang terus menyala. Akibatnya:
+#   1. SQLite (db/custom.db) tidak bisa menyimpan data permanen. Filesystem
+#      Netlify read-only/sementara. Pindah ke database hosted (Turso,
+#      Neon/Postgres, PlanetScale, dll) dan ubah provider di prisma/schema.prisma.
+#   2. Mini-service socket.io (mini-services/obrolan) tidak bisa jalan di
+#      Netlify, jadi Obrolan Global dan Chat Pribadi realtime tidak akan
+#      berfungsi. Rewrite /socket.io/* ke 127.0.0.1 di next.config.ts juga
+#      tidak berlaku. Host service itu terpisah (Railway/Render/Fly.io/VPS).
+#   3. Unggahan user ke data/media dan data/edit-gambar tidak akan tersimpan.
+#      Pakai object storage (Netlify Blobs, S3, Cloudflare R2).
+#   4. Fitur yang butuh ffmpeg atau browser Playwright (Akinator, poster video)
+#      umumnya tidak jalan di function Netlify.
+# Kalau ingin semua fitur jalan apa adanya, host di VPS/Railway/Render
+# memakai "bash mulai.sh".
