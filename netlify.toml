@@ -8,7 +8,6 @@
   # Sengaja TIDAK memakai "npm run build" karena script itu menyalin file ke
   # .next/standalone (khusus deploy self-hosted), yang tidak dipakai Netlify.
   command = "npx prisma generate && npx next build"
-  publish = ".next"
 
 [build.environment]
   # Next.js 16 butuh Node.js 20.9 atau lebih baru.
